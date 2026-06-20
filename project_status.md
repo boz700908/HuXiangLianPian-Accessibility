@@ -88,6 +88,16 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - GitHub 代码同步
 
 ## 重要变更记录
+### 2026-06-21: 完善Mod配置系统
+- **配置项**:
+  - Verbosity（详细程度）：0=最小, 1=正常, 2=详细
+  - AnnounceEmptyStates（播报空状态）：是否播报空列表/空库存等
+- **游戏内设置菜单**:
+  - 快捷键：Ctrl+F11 打开/关闭设置菜单
+  - 导航：上下方向键切换选项，左右方向键修改值
+  - 自动保存：关闭菜单时自动保存配置到文件
+- **配置文件路径**: BepInEx/config/com.boz700908.HuXiangLianPianAccessibility.cfg
+
 ### 2026-06-21: 从MelonLoader切换到BepInEx
 - **原因**: 游戏目录是中文的（"狐想恋翩-梦妹以求- Demo"），MelonLoader处理中文目录会乱码，导致Mod无法正常加载
 - **切换内容**:
