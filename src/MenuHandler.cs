@@ -20,6 +20,8 @@ namespace HuXiangLianPian.Accessibility
         private string _lastAnnouncedText;
         private float _lastAnnounceTime;
         private const float MIN_ANNOUNCE_INTERVAL = 0.1f; // 最小朗读间隔，防止刷屏
+        private float _lastLogTime = 0f;
+        private const float LOG_INTERVAL = 5f; // 每5秒打一次状态日志
 
         // 当前打开的菜单类型
         private MenuType _currentMenuType = MenuType.None;
@@ -168,6 +170,105 @@ namespace HuXiangLianPian.Accessibility
                     return "对话界面";
                 default:
                     return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// 输出菜单详细信息（调试用）。
+        /// 包括可点击对象数量、对象名称等。
+        /// </summary>
+        private void LogMenuDetails(MenuType menuType, IUIManager uiManager)
+        {
+            try
+            {
+                string menuName = GetMenuName(menuType);
+                Main.Log.LogInfo($"========== 菜单详细信息: {menuName} ==========");
+
+                // 获取对应的UI对象
+                IManagedUI ui = null;
+                switch (menuType)
+                {
+                    case MenuType.Title:
+                        ui = uiManager.GetUI<ITitleUI>();
+                        break;
+                    case MenuType.Settings:
+                        ui = uiManager.GetUI<ISettingsUI>();
+                        break;
+                    case MenuType.SaveLoad:
+                        ui = uiManager.GetUI<ISaveLoadUI>();
+                        break;
+                    case MenuType.Backlog:
+                        ui = uiManager.GetUI<IBacklogUI>();
+                        break;
+                }
+
+                if (ui == null)
+                {
+                    Main.Log.LogInfo("  无法获取UI对象");
+                    return;
+                }
+
+                // 获取UI的GameObject
+                var uiGameObject = ui as MonoBehaviour;
+                if (uiGameObject == null)
+                {
+                    Main.Log.LogInfo("  UI对象不是MonoBehaviour");
+                    return;
+                }
+
+                // 统计所有可交互元素
+                var buttons = uiGameObject.GetComponentsInChildren<Button>(true);
+                var toggles = uiGameObject.GetComponentsInChildren<Toggle>(true);
+                var selectables = uiGameObject.GetComponentsInChildren<Selectable>(true);
+
+                Main.Log.LogInfo($"  可交互元素总数: {selectables.Length}");
+                Main.Log.LogInfo($"  按钮数量: {buttons.Length}");
+                Main.Log.LogInfo($"  开关数量: {toggles.Length}");
+                Main.Log.LogInfo("");
+
+                // 列出所有按钮
+                if (buttons.Length > 0)
+                {
+                    Main.Log.LogInfo("  --- 按钮列表 ---");
+                    for (int i = 0; i < buttons.Length; i++)
+                    {
+                        var btn = buttons[i];
+                        string btnText = GetButtonText(btn);
+                        Main.Log.LogInfo($"    [{i}] {btn.gameObject.name} - 文本: {btnText} - 可交互: {btn.interactable}");
+                    }
+                    Main.Log.LogInfo("");
+                }
+
+                // 列出所有开关
+                if (toggles.Length > 0)
+                {
+                    Main.Log.LogInfo("  --- 开关列表 ---");
+                    for (int i = 0; i < toggles.Length; i++)
+                    {
+                        var toggle = toggles[i];
+                        string toggleText = GetToggleText(toggle);
+                        Main.Log.LogInfo($"    [{i}] {toggle.gameObject.name} - 文本: {toggleText} - 状态: {(toggle.isOn ? "开" : "关")} - 可交互: {toggle.interactable}");
+                    }
+                    Main.Log.LogInfo("");
+                }
+
+                // 列出所有Selectable（包括上面没有覆盖的类型）
+                if (selectables.Length > 0)
+                {
+                    Main.Log.LogInfo("  --- 所有可交互元素 ---");
+                    for (int i = 0; i < selectables.Length; i++)
+                    {
+                        var sel = selectables[i];
+                        Main.Log.LogInfo($"    [{i}] {sel.gameObject.name} - 类型: {sel.GetType().Name} - 可交互: {sel.interactable}");
+                    }
+                    Main.Log.LogInfo("");
+                }
+
+                Main.Log.LogInfo($"========== 菜单详细信息结束 ==========");
+            }
+            catch (System.Exception e)
+            {
+                Main.Log.LogWarning($"输出菜单详细信息时出错: {e.Message}");
             }
         }
 

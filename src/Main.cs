@@ -39,6 +39,9 @@ namespace HuXiangLianPian.Accessibility
         private bool _gameReady = false;
         private float _lastReadyCheckLogTime = 0f;
         private const float READY_CHECK_LOG_INTERVAL = 3f; // 每3秒打一次日志
+        private float _lastUpdateLogTime = 0f;
+        private const float UPDATE_LOG_INTERVAL = 5f; // 每5秒打一次Update心跳日志
+        private int _updateFrameCount = 0;
 
         /// <summary>
         /// 调试模式 - 开启时记录所有屏幕阅读器输出和详细游戏状态。
@@ -99,6 +102,15 @@ namespace HuXiangLianPian.Accessibility
 
         void Update()
         {
+            _updateFrameCount++;
+
+            // 每隔几秒打一次心跳日志，确认Update在正常执行
+            if (Time.unscaledTime - _lastUpdateLogTime > UPDATE_LOG_INTERVAL)
+            {
+                _lastUpdateLogTime = Time.unscaledTime;
+                Log.LogInfo($"Update心跳 - 已执行{_updateFrameCount}帧，EventSystem: {(EventSystem.current != null ? "存在" : "不存在")}");
+            }
+
             // 开发阶段：禁用游戏就绪检测，让Mod直接可用
             // 后续稳定后再恢复检测
             // if (!CheckGameReady()) return;
