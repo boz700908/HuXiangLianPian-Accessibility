@@ -43,6 +43,7 @@ namespace HuXiangLianPian.Accessibility
         private float _lastUpdateLogTime = 0f;
         private const float UPDATE_LOG_INTERVAL = 5f; // 每5秒打一次Update心跳日志
         private int _updateFrameCount = 0;
+        private bool _firstUpdateLog = false; // 是否已输出首次Update日志
 
         /// <summary>
         /// 调试模式 - 开启时记录所有屏幕阅读器输出和详细游戏状态。
@@ -66,8 +67,10 @@ namespace HuXiangLianPian.Accessibility
         void Awake()
         {
             Log = Logger;
-            Log.LogInfo("无障碍Mod正在启动...");
+            Log.LogInfo("=== 无障碍Mod生命周期: Awake ===");
             Log.LogInfo($"调试模式: {(DebugMode ? "开启" : "关闭")}");
+            Log.LogInfo($"GameObject名称: {gameObject.name}");
+            Log.LogInfo($"已启用: {enabled}");
 
             ModConfig.Initialize(Config);
             Log.LogInfo("配置已初始化");
@@ -84,7 +87,25 @@ namespace HuXiangLianPian.Accessibility
             SceneManager.sceneLoaded += OnSceneLoaded;
             StartCoroutine(AnnounceStartupDelayed());
 
-            Log.LogInfo("无障碍Mod启动完成");
+            // 用InvokeRepeating作为备用心跳，确认MonoBehaviour在正常工作
+            InvokeRepeating(nameof(InvokeHeartbeat), 1f, 5f);
+
+            Log.LogInfo("=== 无障碍Mod生命周期: Awake完成 ===");
+        }
+
+        void OnEnable()
+        {
+            Log.LogInfo("=== 无障碍Mod生命周期: OnEnable ===");
+        }
+
+        void Start()
+        {
+            Log.LogInfo("=== 无障碍Mod生命周期: Start ===");
+        }
+
+        private void InvokeHeartbeat()
+        {
+            Log.LogInfo($"Invoke心跳 - 已执行{_updateFrameCount}帧，已启用: {enabled}，EventSystem: {(EventSystem.current != null ? "存在" : "不存在")}");
         }
 
         private void InitializeHandlers()
@@ -96,14 +117,23 @@ namespace HuXiangLianPian.Accessibility
 
         private IEnumerator AnnounceStartupDelayed()
         {
+            Log.LogInfo("启动语音协程开始");
             // 短暂延迟，确保屏幕阅读器准备就绪
             yield return new WaitForSeconds(1f);
             ScreenReader.Say(Loc.Get("mod_loaded"));
+            Log.LogInfo("启动语音已播放");
         }
 
         void Update()
         {
             _updateFrameCount++;
+
+            // 第一帧就打日志，确认Update在执行
+            if (!_firstUpdateLog)
+            {
+                _firstUpdateLog = true;
+                Log.LogInfo($"=== 首次Update - 第{_updateFrameCount}帧 ===");
+            }
 
             // 每隔几秒打一次心跳日志，确认Update在正常执行
             if (Time.unscaledTime - _lastUpdateLogTime > UPDATE_LOG_INTERVAL)
