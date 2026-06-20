@@ -482,7 +482,8 @@ namespace HuXiangLianPian.Accessibility
                 }
 
                 // 手动设置导航目标（Automatic模式在复杂布局下可能不工作）
-                // SetupManualNavigation(selectables);
+                // 手动设置导航目标（Automatic模式在复杂布局下可能不工作）
+                SetupManualNavigation(selectables);
 
                 // 选中第一个可交互元素
                 foreach (var sel in selectables)
