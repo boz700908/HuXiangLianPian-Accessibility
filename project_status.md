@@ -23,12 +23,14 @@
 ### Phase 0: 项目设置
 - [x] 游戏分析（引擎、架构、运行时）
 - [x] Mod加载器选择（MelonLoader）
-- [x] Tolk屏幕阅读器集成
-- [x] .NET SDK 配置
-- [ ] MelonLoader 安装
-- [ ] 反编译游戏代码
-- [ ] 项目结构搭建
-- [ ] 首次编译测试
+- [x] Tolk屏幕阅读器集成（从boz700908/tolk仓库下载）
+- [x] .NET SDK 配置（.NET 8.0.422）
+- [x] GitHub 仓库创建
+- [x] 项目结构搭建
+- [x] MelonLoader 安装（v0.7.3 x64）
+- [x] 反编译游戏代码（反射分析结构，69个自定义类型）
+- [x] 首次编译测试（0警告0错误）
+- [x] 游戏API文档（docs/game-api.md）
 
 ### Phase 1: 代码分析
 - [ ] Tier 1: 结构概览
@@ -65,3 +67,44 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - Linux 工作区编译测试
 - Windows 真机测试
 - GitHub 代码同步
+
+## 技术分析总结
+
+### 游戏引擎
+- **引擎**: Unity + Naninovel 视觉小说引擎
+- **运行时**: Mono (64位)
+- **资源管理**: Unity Addressables
+- **角色动画**: Live2D
+
+### 自定义代码分析
+- **Assembly-CSharp.dll**: 62KB，69个类型
+- **主要命名空间**:
+  - (global): 基础UI控件
+  - Huxiang.Naninovel: 游戏自定义Naninovel扩展
+  - NananaGames.NaniExt.UI: Naninovel UI扩展
+  - NananaGames.UI: UI相关
+- **关键类**:
+  - ScriptableButton / ScriptableToggle: UI控件基类
+  - SaveLoadMenu: 存档读档菜单
+  - SettingsUI: 设置菜单
+  - ControlPanel*: 控制面板（自动播放、跳过、存档读档）
+  - ScrollWheelBacklog: 滚轮回溯功能
+
+### Naninovel核心API
+- **Engine**: 引擎核心，通过 `Engine.GetService<T>()` 获取服务
+- **TextPrinterManager**: 文本打印机管理器
+- **ScriptPlayer**: 脚本播放器
+- **UIManager**: UI管理器
+- **InputManager**: 输入管理器
+- **ChoiceHandlerManager**: 选项处理器管理器
+
+### 配置管理
+- 使用 MelonPreferences 进行配置管理
+- 配置文件自动保存到 UserData/[ModName].cfg
+- 支持游戏内设置菜单（Ctrl+F11打开）
+- 所有设置可配置，不硬编码
+
+### 路径配置
+- 使用 Directory.Build.props 配置游戏路径
+- 用户可修改 GameDir 变量指向自己的游戏目录
+- 示例文件: Directory.Build.props.example
