@@ -1,0 +1,16 @@
+<!--
+  复制此文件为 Directory.Build.props 并修改下面的路径为你电脑上的游戏路径
+  路径分隔符用反斜杠 \ ，如果路径中有空格不需要加引号
+-->
+<Project>
+  <PropertyGroup>
+    <!-- 游戏安装目录 -->
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\狐想恋翩-梦妹以求- Demo</GameDir>
+    <!-- 游戏名称（用于 _Data 目录） -->
+    <GameName>HuXiangLianPian</GameName>
+    <!-- MelonLoader 运行时目录 (net35 或 net6) -->
+    <MelonLoaderRuntime>net35</MelonLoaderRuntime>
+    <!-- 目标框架 -->
+    <TargetFramework>net472</TargetFramework>
+  </PropertyGroup>
+</Project>

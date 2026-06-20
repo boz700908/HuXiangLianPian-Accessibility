@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- 目标框架从 Directory.Build.props 读取 -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>HuXiangLianPianAccessibility</AssemblyName>
+    <RootNamespace>HuXiangLianPian.Accessibility</RootNamespace>
+  </PropertyGroup>
+
+  <!-- 排除反编译和模板目录 -->
+  <ItemGroup>
+    <Compile Remove="decompiled\**" />
+    <Compile Remove="templates\**" />
+  </ItemGroup>
+
+  <!-- MelonLoader 引用 -->
+  <ItemGroup>
+    <Reference Include="MelonLoader">
+      <HintPath>$(GameDir)\MelonLoader\$(MelonLoaderRuntime)\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDir)\MelonLoader\$(MelonLoaderRuntime)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Unity 引用 -->
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 游戏主程序集 -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 编译后自动复制到 Mods 目录 -->
+  <Target Name="CopyToMods" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\Mods\" />
+    <Message Text="Copied $(TargetFileName) to Mods folder" Importance="High" />
+  </Target>
+</Project>
