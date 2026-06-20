@@ -87,8 +87,8 @@ namespace HuXiangLianPian.Accessibility
             SceneManager.sceneLoaded += OnSceneLoaded;
             StartCoroutine(AnnounceStartupDelayed());
 
-            // 用InvokeRepeating作为备用心跳，确认MonoBehaviour在正常工作
-            InvokeRepeating(nameof(InvokeHeartbeat), 1f, 5f);
+            // 暂时注释掉InvokeRepeating，先确认Mod基本功能正常
+            // InvokeRepeating(nameof(InvokeHeartbeat), 1f, 5f);
 
             Log.LogInfo("=== 无障碍Mod生命周期: Awake完成 ===");
         }
@@ -103,10 +103,11 @@ namespace HuXiangLianPian.Accessibility
             Log.LogInfo("=== 无障碍Mod生命周期: Start ===");
         }
 
-        private void InvokeHeartbeat()
-        {
-            Log.LogInfo($"Invoke心跳 - 已执行{_updateFrameCount}帧，已启用: {enabled}，EventSystem: {(EventSystem.current != null ? "存在" : "不存在")}");
-        }
+        // 暂时注释掉，先确认Mod基本功能正常
+        // private void InvokeHeartbeat()
+        // {
+        //     Log.LogInfo($"Invoke心跳 - 已执行{_updateFrameCount}帧，已启用: {enabled}，EventSystem: {(EventSystem.current != null ? "存在" : "不存在")}");
+        // }
 
         private void InitializeHandlers()
         {
@@ -120,8 +121,9 @@ namespace HuXiangLianPian.Accessibility
             Log.LogInfo("启动语音协程开始");
             // 短暂延迟，确保屏幕阅读器准备就绪
             yield return new WaitForSeconds(1f);
-            ScreenReader.Say(Loc.Get("mod_loaded"));
-            Log.LogInfo("启动语音已播放");
+            // 暂时注释掉，先确认Mod基本生命周期正常
+            // ScreenReader.Say(Loc.Get("mod_loaded"));
+            Log.LogInfo("启动语音协程完成（语音已暂时禁用）");
         }
 
         void Update()
@@ -262,8 +264,9 @@ namespace HuXiangLianPian.Accessibility
         #region Handler Updates
         private void UpdateHandlers()
         {
+            // 暂时注释掉，先确认Mod基本生命周期正常
             // 对需要每帧检查的处理器调用 Update()
-            _menuHandler.Update();
+            // _menuHandler.Update();
             // _dialogHandler.Update();
         }
         #endregion
