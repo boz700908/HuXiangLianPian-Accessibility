@@ -35,24 +35,32 @@
 - [x] dist分发目录（完整运行时文件，已提交到Git）
 
 ### Phase 1: 代码分析
-- [x] Tier 1: 结构概览（Assembly-CSharp.dll 31个自定义类，Naninovel 972个类）
-- [x] Tier 1: UI系统（IUIManager接口、24个UI接口、完整UI列表）
-- [x] Tier 1: 文本系统（ITextPrinterManager、OnPrintStarted/OnPrintFinished事件）
+- [x] Tier 1: 结构概览（Assembly-CSharp.dll 32个自定义类，Naninovel 972个类）
+- [x] Tier 1: UI系统（IUIManager接口、20+个UI接口、完整UI列表）
+- [x] Tier 1: 文本系统（ITextPrinterManager、OnPrintStarted/OnPrintFinished事件、PrintedMessage、LocalizableText）
 - [x] Tier 1: 脚本播放器（IScriptPlayer接口、丰富的事件系统）
-- [ ] Tier 1: 输入系统（IInputManager接口，待深入分析输入绑定）
-- [ ] Tier 1: 状态管理
-- [ ] Tier 1: 本地化
-- [ ] Tier 2: 游戏机制
-- [ ] Tier 2: 状态系统
-- [ ] Tier 2: 事件系统
-- [ ] Tier 2: 选项系统
-- [ ] Tier 2: 存档系统
+- [x] Tier 1: 输入系统（IInputManager、IInputSampler、输入绑定）
+- [x] Tier 1: 状态管理（IStateManager、存档系统）
+- [x] Tier 1: 选择支系统（IChoiceHandlerManager、UIChoiceHandler、ChoiceState）
+- [x] Tier 1: 音频系统（IAudioManager）
+- [x] Tier 1: 自定义变量系统（ICustomVariableManager）
+- [x] Tier 1: 本地化（LocalizableText、仅中文）
+- [x] Tier 2: 游戏机制（对话、选项、存档）
+- [x] Tier 2: 状态系统（全局状态、设置状态、游戏状态）
+- [x] Tier 2: 事件系统（丰富的C#事件，无需Harmony补丁）
+- [x] Tier 2: 选项系统（ChoiceState、UIChoiceHandler）
+- [x] Tier 2: 存档系统（IStateManager、ISaveSlotManager）
+- [x] 游戏API文档详细更新（docs/game-api.md）
 
 ### Phase 2: 基础框架
-- [ ] 主菜单导航
+- [x] 主菜单导航（MenuHandler.cs，分类处理不同UI元素）
+- [x] 菜单打开/关闭检测（自动朗读菜单标题）
+- [x] 存档槽位特殊适配（读取槽位编号、日期、文本）
+- [x] 设置项特殊适配（读取开关标签和状态）
 - [ ] 对话文本朗读
-- [ ] 设置菜单
-- [ ] 存档/读档
+- [ ] 全局快捷键
+- [ ] 设置菜单完整支持
+- [ ] 存档/读档完整支持
 
 ### Phase 3: 功能完善
 - [ ] 完整菜单支持

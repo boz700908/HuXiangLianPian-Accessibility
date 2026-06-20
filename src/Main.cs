@@ -1,6 +1,7 @@
 using MelonLoader;
 using UnityEngine;
 using System.Collections;
+using Naninovel;
 
 // ============================================================================
 // 重要：游戏代码访问
@@ -45,8 +46,8 @@ namespace HuXiangLianPian.Accessibility
         public static bool DebugMode = false;
 
         // 处理器 - 每个功能/界面一个
+        private MenuHandler _menuHandler;
         // private DialogHandler _dialogHandler;
-        // private MenuHandler _menuHandler;
         // private SettingsHandler _settingsHandler;
         #endregion
 
@@ -62,8 +63,8 @@ namespace HuXiangLianPian.Accessibility
         private void InitializeHandlers()
         {
             // 在这里创建处理器实例
+            _menuHandler = new MenuHandler();
             // _dialogHandler = new DialogHandler();
-            // _menuHandler = new MenuHandler();
         }
 
         private IEnumerator AnnounceStartupDelayed()
@@ -89,15 +90,31 @@ namespace HuXiangLianPian.Accessibility
         {
             if (_gameReady) return true;
 
-            // 检查游戏单例 - 根据你的游戏调整！
-            // 对于 Naninovel 引擎，可以检查 Naninovel.Engine 或相关管理器
-            // if (/* 游戏就绪条件 */)
-            // {
-            //     _gameReady = true;
-            //     MelonLogger.Msg("游戏就绪");
-            // }
+            // 检查Naninovel引擎是否已初始化
+            try
+            {
+                if (Engine.Initialized)
+                {
+                    _gameReady = true;
+                    MelonLogger.Msg("Naninovel引擎已就绪");
+                    OnGameReady();
+                }
+            }
+            catch (System.Exception)
+            {
+                // 引擎还没准备好，忽略异常
+            }
 
             return _gameReady;
+        }
+
+        /// <summary>
+        /// 游戏就绪时调用，初始化需要游戏API的功能。
+        /// </summary>
+        private void OnGameReady()
+        {
+            // 在这里初始化需要游戏API的处理器
+            // 比如订阅Naninovel事件
         }
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
@@ -163,8 +180,8 @@ namespace HuXiangLianPian.Accessibility
         private void UpdateHandlers()
         {
             // 对需要每帧检查的处理器调用 Update()
+            _menuHandler.Update();
             // _dialogHandler.Update();
-            // _menuHandler.Update();
         }
         #endregion
 

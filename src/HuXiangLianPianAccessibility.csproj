@@ -60,6 +60,14 @@
       <HintPath>$(GameDir)\$(GameName)_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Elringus.Naninovel.Runtime">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\Elringus.Naninovel.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Naninovel.Common">
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\Naninovel.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <!-- 编译后自动复制到 Mods 目录 -->
