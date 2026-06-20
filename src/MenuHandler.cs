@@ -187,6 +187,9 @@ namespace HuXiangLianPian.Accessibility
                             DebugLogger.Log(LogCategory.State, $"菜单打开: {menuName}");
                         }
 
+                        // 自动修复导航
+                        FixNavigation(uiManager, newMenuType);
+
                         // 调试模式：输出菜单详细信息
                         if (Main.DebugMode)
                         {
@@ -229,6 +232,89 @@ namespace HuXiangLianPian.Accessibility
                     return "对话界面";
                 default:
                     return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// 自动修复菜单导航。
+        /// Naninovel的按钮默认导航模式是None，导致方向键无法导航。
+        /// </summary>
+        private void FixNavigation(IUIManager uiManager, MenuType menuType)
+        {
+            try
+            {
+                // 获取对应的UI对象
+                IManagedUI ui = null;
+                switch (menuType)
+                {
+                    case MenuType.Title:
+                        ui = uiManager.GetUI<ITitleUI>();
+                        break;
+                    case MenuType.Settings:
+                        ui = uiManager.GetUI<ISettingsUI>();
+                        break;
+                    case MenuType.SaveLoad:
+                        ui = uiManager.GetUI<ISaveLoadUI>();
+                        break;
+                    case MenuType.Backlog:
+                        ui = uiManager.GetUI<IBacklogUI>();
+                        break;
+                }
+
+                if (ui == null) return;
+
+                var uiGameObject = ui as MonoBehaviour;
+                if (uiGameObject == null) return;
+
+                // 获取所有可交互元素
+                var selectables = uiGameObject.GetComponentsInChildren<Selectable>(true);
+
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo($"修复导航 - 找到 {selectables.Length} 个可交互元素");
+                }
+
+                // 设置导航模式为 Automatic
+                int fixedCount = 0;
+                foreach (var sel in selectables)
+                {
+                    if (sel.interactable && sel.gameObject.activeInHierarchy)
+                    {
+                        var nav = sel.navigation;
+                        if (nav.mode == Navigation.Mode.None)
+                        {
+                            nav.mode = Navigation.Mode.Automatic;
+                            sel.navigation = nav;
+                            fixedCount++;
+                        }
+                    }
+                }
+
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo($"修复导航 - 已修复 {fixedCount} 个元素的导航模式");
+                }
+
+                // 选中第一个可交互元素
+                foreach (var sel in selectables)
+                {
+                    if (sel.interactable && sel.gameObject.activeInHierarchy)
+                    {
+                        EventSystem.current.SetSelectedGameObject(sel.gameObject);
+                        if (Main.DebugMode)
+                        {
+                            Main.Log.LogInfo($"修复导航 - 默认选中: {sel.gameObject.name}");
+                        }
+                        break;
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"修复导航时出错: {e.Message}");
+                }
             }
         }
 
