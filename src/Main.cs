@@ -398,7 +398,10 @@ namespace HuXiangLianPian.Accessibility
                     if (saveLoadUI != null)
                     {
                         saveLoadUI.Visible = true;
-                        // TODO: 切换到存档面板
+                        
+                        // 切换到存档面板
+                        SwitchToSavePanel(saveLoadUI);
+                        
                         ScreenReader.Say("打开存档菜单");
                         Log.LogInfo("已打开存档菜单");
                     }
@@ -435,7 +438,10 @@ namespace HuXiangLianPian.Accessibility
                     if (saveLoadUI != null)
                     {
                         saveLoadUI.Visible = true;
-                        // TODO: 切换到读档面板
+                        
+                        // 切换到读档面板
+                        SwitchToLoadPanel(saveLoadUI);
+                        
                         ScreenReader.Say("打开读档菜单");
                         Log.LogInfo("已打开读档菜单");
                     }
@@ -455,6 +461,244 @@ namespace HuXiangLianPian.Accessibility
             {
                 ScreenReader.Say("打开读档菜单失败");
                 Log.LogWarning($"打开读档菜单时出错: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 切换到存档面板。
+        /// </summary>
+        private void SwitchToSavePanel(ISaveLoadUI saveLoadUI)
+        {
+            try
+            {
+                // 方法1：尝试设置PresentationMode属性（SaveLoadMenu的标准方式）
+                var presentationModeProperty = saveLoadUI.GetType().GetProperty("PresentationMode", 
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
+                if (presentationModeProperty != null)
+                {
+                    var enumType = presentationModeProperty.PropertyType;
+                    if (enumType.IsEnum)
+                    {
+                        // 尝试获取Save枚举值
+                        var saveValue = System.Enum.Parse(enumType, "Save");
+                        presentationModeProperty.SetValue(saveLoadUI, saveValue);
+                        Log.LogInfo("已通过PresentationMode属性设置为存档面板");
+                        return;
+                    }
+                }
+
+                // 方法2：尝试调用SetPresentationMode方法
+                var setPresentationModeMethod = saveLoadUI.GetType().GetMethod("SetPresentationMode", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
+                if (setPresentationModeMethod != null)
+                {
+                    var parameters = setPresentationModeMethod.GetParameters();
+                    if (parameters.Length == 1)
+                    {
+                        var enumType = parameters[0].ParameterType;
+                        if (enumType.IsEnum)
+                        {
+                            var saveValue = System.Enum.Parse(enumType, "Save");
+                            setPresentationModeMethod.Invoke(saveLoadUI, new object[] { saveValue });
+                            Log.LogInfo("已通过SetPresentationMode方法设置为存档面板");
+                            return;
+                        }
+                    }
+                }
+
+                // 方法3：尝试找到SaveLoadSwitchPanelButton并点击
+                var uiGameObject = saveLoadUI as MonoBehaviour;
+                if (uiGameObject != null)
+                {
+                    var switchButton = uiGameObject.transform.Find("SaveLoadSwitchPanelButton")?.GetComponent<UnityEngine.UI.Button>();
+                    if (switchButton == null)
+                    {
+                        // 尝试在子对象中查找
+                        var buttons = uiGameObject.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+                        foreach (var btn in buttons)
+                        {
+                            if (btn.name == "SaveLoadSwitchPanelButton")
+                            {
+                                switchButton = btn;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (switchButton != null && switchButton.interactable)
+                    {
+                        // 检查当前是否已经是存档面板
+                        var savePanel = uiGameObject.transform.Find("SavePanel");
+                        if (savePanel != null && !savePanel.gameObject.activeSelf)
+                        {
+                            switchButton.onClick.Invoke();
+                            Log.LogInfo("已点击切换面板按钮切换到存档面板");
+                            return;
+                        }
+                    }
+                }
+                
+                // 方法4：尝试找到SaveButton并点击（备用）
+                if (uiGameObject != null)
+                {
+                    var saveButton = uiGameObject.transform.Find("SaveButton")?.GetComponent<UnityEngine.UI.Button>();
+                    if (saveButton == null)
+                    {
+                        // 尝试在子对象中查找
+                        var buttons = uiGameObject.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+                        foreach (var btn in buttons)
+                        {
+                            if (btn.name == "SaveButton")
+                            {
+                                saveButton = btn;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (saveButton != null && saveButton.interactable)
+                    {
+                        saveButton.onClick.Invoke();
+                        Log.LogInfo("已点击存档面板按钮");
+                        return;
+                    }
+                }
+                
+                // 方法5：尝试通过PanelType属性设置（备用）
+                var panelTypeProperty = saveLoadUI.GetType().GetProperty("PanelType", 
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (panelTypeProperty != null)
+                {
+                    // 假设Save是0
+                    panelTypeProperty.SetValue(saveLoadUI, 0);
+                    Log.LogInfo("已通过PanelType属性设置为存档面板");
+                    return;
+                }
+                
+                Log.LogWarning("无法切换到存档面板，未找到可用的方法");
+            }
+            catch (System.Exception e)
+            {
+                Log.LogWarning($"切换到存档面板时出错: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 切换到读档面板。
+        /// </summary>
+        private void SwitchToLoadPanel(ISaveLoadUI saveLoadUI)
+        {
+            try
+            {
+                // 方法1：尝试设置PresentationMode属性（SaveLoadMenu的标准方式）
+                var presentationModeProperty = saveLoadUI.GetType().GetProperty("PresentationMode", 
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
+                if (presentationModeProperty != null)
+                {
+                    var enumType = presentationModeProperty.PropertyType;
+                    if (enumType.IsEnum)
+                    {
+                        // 尝试获取Load枚举值
+                        var loadValue = System.Enum.Parse(enumType, "Load");
+                        presentationModeProperty.SetValue(saveLoadUI, loadValue);
+                        Log.LogInfo("已通过PresentationMode属性设置为读档面板");
+                        return;
+                    }
+                }
+
+                // 方法2：尝试调用SetPresentationMode方法
+                var setPresentationModeMethod = saveLoadUI.GetType().GetMethod("SetPresentationMode", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
+                if (setPresentationModeMethod != null)
+                {
+                    var parameters = setPresentationModeMethod.GetParameters();
+                    if (parameters.Length == 1)
+                    {
+                        var enumType = parameters[0].ParameterType;
+                        if (enumType.IsEnum)
+                        {
+                            var loadValue = System.Enum.Parse(enumType, "Load");
+                            setPresentationModeMethod.Invoke(saveLoadUI, new object[] { loadValue });
+                            Log.LogInfo("已通过SetPresentationMode方法设置为读档面板");
+                            return;
+                        }
+                    }
+                }
+
+                // 方法3：尝试找到SaveLoadSwitchPanelButton并点击
+                var uiGameObject = saveLoadUI as MonoBehaviour;
+                if (uiGameObject != null)
+                {
+                    var switchButton = uiGameObject.transform.Find("SaveLoadSwitchPanelButton")?.GetComponent<UnityEngine.UI.Button>();
+                    if (switchButton == null)
+                    {
+                        // 尝试在子对象中查找
+                        var buttons = uiGameObject.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+                        foreach (var btn in buttons)
+                        {
+                            if (btn.name == "SaveLoadSwitchPanelButton")
+                            {
+                                switchButton = btn;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (switchButton != null && switchButton.interactable)
+                    {
+                        // 检查当前是否已经是读档面板
+                        var loadPanel = uiGameObject.transform.Find("LoadPanel");
+                        if (loadPanel != null && !loadPanel.gameObject.activeSelf)
+                        {
+                            switchButton.onClick.Invoke();
+                            Log.LogInfo("已点击切换面板按钮切换到读档面板");
+                            return;
+                        }
+                    }
+                }
+                
+                // 方法4：尝试找到LoadButton并点击（备用）
+                if (uiGameObject != null)
+                {
+                    var loadButton = uiGameObject.transform.Find("LoadButton")?.GetComponent<UnityEngine.UI.Button>();
+                    if (loadButton == null)
+                    {
+                        // 尝试在子对象中查找
+                        var buttons = uiGameObject.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+                        foreach (var btn in buttons)
+                        {
+                            if (btn.name == "LoadButton")
+                            {
+                                loadButton = btn;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (loadButton != null && loadButton.interactable)
+                    {
+                        loadButton.onClick.Invoke();
+                        Log.LogInfo("已点击读档面板按钮");
+                        return;
+                    }
+                }
+                
+                // 方法5：尝试通过PanelType属性设置（备用）
+                var panelTypeProperty = saveLoadUI.GetType().GetProperty("PanelType", 
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (panelTypeProperty != null)
+                {
+                    // 假设Load是1
+                    panelTypeProperty.SetValue(saveLoadUI, 1);
+                    Log.LogInfo("已通过PanelType属性设置为读档面板");
+                    return;
+                }
+                
+                Log.LogWarning("无法切换到读档面板，未找到可用的方法");
+            }
+            catch (System.Exception e)
+            {
+                Log.LogWarning($"切换到读档面板时出错: {e.Message}");
             }
         }
         #endregion

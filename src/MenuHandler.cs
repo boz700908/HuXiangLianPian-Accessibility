@@ -56,6 +56,22 @@ namespace HuXiangLianPian.Accessibility
             // 设置菜单 - 跳过设置
             { "SkipAllToggle", "允许跳过未读部分，是" },
             { "ReadOnlyToggle", "允许跳过未读部分，否" },
+            
+            // 存档读档菜单
+            { "DeleteButton", "删除" },
+            { "QuickButton", "快速存档" },
+            { "AutoButton", "自动存档" },
+            { "FirstButton", "第一页" },
+            { "PrevButton", "上一页" },
+            { "NextButton", "下一页" },
+            { "LastButton", "最后一页" },
+            
+            // 确认对话框
+            { "ConfirmButton", "确认" },
+            { "CancelButton", "取消" },
+            { "YesButton", "是" },
+            { "NoButton", "否" },
+            { "OkButton", "确定" },
         };
         
         // 硬编码的滑块文本映射
@@ -71,6 +87,10 @@ namespace HuXiangLianPian.Accessibility
             { "Voice", "角色语音" },
             { "SE", "SE音量" },
         };
+        
+        // 滑块值变化实时朗读
+        private Slider _currentSlider;
+        private float _lastSliderValue;
         #endregion
 
         #region Enums
@@ -82,6 +102,7 @@ namespace HuXiangLianPian.Accessibility
             SaveLoad,   // 存档/读档菜单
             Backlog,    // 历史记录
             Dialogue,   // 对话界面
+            Confirmation, // 确认对话框
             Other       // 其他菜单
         }
         #endregion
@@ -115,6 +136,9 @@ namespace HuXiangLianPian.Accessibility
                 _lastSelectedObject = currentSelected;
                 HandleSelectionChanged(currentSelected);
             }
+
+            // 滑块值变化实时朗读
+            CheckSliderValueChanged();
         }
 
         /// <summary>
@@ -216,6 +240,13 @@ namespace HuXiangLianPian.Accessibility
                     newMenuType = MenuType.Backlog;
                 }
 
+                // 检查确认对话框（优先级最高，因为它是模态的）
+                var confirmationUI = uiManager.GetUI<IConfirmationUI>();
+                if (confirmationUI != null && confirmationUI.Visible)
+                {
+                    newMenuType = MenuType.Confirmation;
+                }
+
                 // 如果菜单类型变化了
                 if (newMenuType != _currentMenuType)
                 {
@@ -230,6 +261,12 @@ namespace HuXiangLianPian.Accessibility
                         {
                             ScreenReader.Say(menuName);
                             DebugLogger.Log(LogCategory.State, $"菜单打开: {menuName}");
+                        }
+
+                        // 如果是确认对话框，朗读对话框文本内容
+                        if (newMenuType == MenuType.Confirmation)
+                        {
+                            AnnounceConfirmationMessage(uiManager);
                         }
 
                         // 自动修复导航
@@ -259,6 +296,107 @@ namespace HuXiangLianPian.Accessibility
         }
 
         /// <summary>
+        /// 朗读确认对话框的消息文本。
+        /// </summary>
+        private void AnnounceConfirmationMessage(IUIManager uiManager)
+        {
+            try
+            {
+                var confirmationUI = uiManager.GetUI<IConfirmationUI>();
+                if (confirmationUI == null) return;
+
+                var uiGameObject = confirmationUI as MonoBehaviour;
+                if (uiGameObject == null) return;
+
+                // 尝试从子对象中找到消息文本
+                // 确认对话框通常会有一个包含消息文本的TMP_Text或Text组件
+                var tmpTexts = uiGameObject.GetComponentsInChildren<TMP_Text>(true);
+                if (tmpTexts != null && tmpTexts.Length > 0)
+                {
+                    // 找到最长的文本，通常是消息内容
+                    TMP_Text messageText = null;
+                    int maxLength = 0;
+                    foreach (var tmpText in tmpTexts)
+                    {
+                        if (!string.IsNullOrEmpty(tmpText.text) && tmpText.text.Length > maxLength)
+                        {
+                            // 排除按钮文本（通常比较短）
+                            if (tmpText.text.Length > 5)
+                            {
+                                messageText = tmpText;
+                                maxLength = tmpText.text.Length;
+                            }
+                        }
+                    }
+
+                    if (messageText != null)
+                    {
+                        string message = messageText.text;
+                        if (!string.IsNullOrEmpty(message))
+                        {
+                            // 延迟一点朗读，让菜单标题先读完
+                            // 这里直接朗读，ScreenReader内部会处理队列
+                            ScreenReader.Say(message);
+                            DebugLogger.Log(LogCategory.Handler, "MenuHandler", $"确认对话框消息: {message}");
+                            return;
+                        }
+                    }
+                }
+
+                // 如果没找到TMP_Text，尝试找普通Text
+                var texts = uiGameObject.GetComponentsInChildren<Text>(true);
+                if (texts != null && texts.Length > 0)
+                {
+                    Text messageText = null;
+                    int maxLength = 0;
+                    foreach (var text in texts)
+                    {
+                        if (!string.IsNullOrEmpty(text.text) && text.text.Length > maxLength)
+                        {
+                            if (text.text.Length > 5)
+                            {
+                                messageText = text;
+                                maxLength = text.text.Length;
+                            }
+                        }
+                    }
+
+                    if (messageText != null)
+                    {
+                        string message = messageText.text;
+                        if (!string.IsNullOrEmpty(message))
+                        {
+                            ScreenReader.Say(message);
+                            DebugLogger.Log(LogCategory.Handler, "MenuHandler", $"确认对话框消息: {message}");
+                            return;
+                        }
+                    }
+                }
+
+                // 调试：列出所有文本组件，方便后续完善
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo("  --- 确认对话框所有文本组件 ---");
+                    foreach (var tmpText in tmpTexts)
+                    {
+                        Main.Log.LogInfo($"    TMP_Text: '{tmpText.text}' (长度: {tmpText.text.Length})");
+                    }
+                    foreach (var text in texts)
+                    {
+                        Main.Log.LogInfo($"    Text: '{text.text}' (长度: {text.text.Length})");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"朗读确认对话框消息时出错: {e.Message}");
+                }
+            }
+        }
+
+        /// <summary>
         /// 获取菜单的显示名称。
         /// </summary>
         private string GetMenuName(MenuType menuType)
@@ -275,6 +413,8 @@ namespace HuXiangLianPian.Accessibility
                     return "历史记录";
                 case MenuType.Dialogue:
                     return "对话界面";
+                case MenuType.Confirmation:
+                    return "确认对话框";
                 default:
                     return string.Empty;
             }
@@ -304,6 +444,9 @@ namespace HuXiangLianPian.Accessibility
                     case MenuType.Backlog:
                         ui = uiManager.GetUI<IBacklogUI>();
                         break;
+                    case MenuType.Confirmation:
+                        ui = uiManager.GetUI<IConfirmationUI>();
+                        break;
                 }
 
                 if (ui == null) return;
@@ -320,18 +463,16 @@ namespace HuXiangLianPian.Accessibility
                 }
 
                 // 设置导航模式为 Automatic
+                // 注意：修复所有Selectable（包括隐藏的），因为标签切换时隐藏的元素会变成可见
                 int fixedCount = 0;
                 foreach (var sel in selectables)
                 {
-                    if (sel.interactable && sel.gameObject.activeInHierarchy)
+                    var nav = sel.navigation;
+                    if (nav.mode == Navigation.Mode.None)
                     {
-                        var nav = sel.navigation;
-                        if (nav.mode == Navigation.Mode.None)
-                        {
-                            nav.mode = Navigation.Mode.Automatic;
-                            sel.navigation = nav;
-                            fixedCount++;
-                        }
+                        nav.mode = Navigation.Mode.Automatic;
+                        sel.navigation = nav;
+                        fixedCount++;
                     }
                 }
 
@@ -339,6 +480,9 @@ namespace HuXiangLianPian.Accessibility
                 {
                     Main.Log.LogInfo($"修复导航 - 已修复 {fixedCount} 个元素的导航模式");
                 }
+
+                // 手动设置导航目标（Automatic模式在复杂布局下可能不工作）
+                // SetupManualNavigation(selectables);
 
                 // 选中第一个可交互元素
                 foreach (var sel in selectables)
@@ -359,6 +503,121 @@ namespace HuXiangLianPian.Accessibility
                 if (Main.DebugMode)
                 {
                     Main.Log.LogWarning($"修复导航时出错: {e.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 手动设置导航目标。
+        /// Automatic模式在复杂布局下可能不工作，需要手动设置。
+        /// </summary>
+        private void SetupManualNavigation(Selectable[] selectables)
+        {
+            try
+            {
+                // 过滤出可见的、可交互的Selectable
+                var visibleSelectables = new System.Collections.Generic.List<Selectable>();
+                foreach (var sel in selectables)
+                {
+                    if (sel.interactable && sel.gameObject.activeInHierarchy)
+                    {
+                        visibleSelectables.Add(sel);
+                    }
+                }
+
+                if (visibleSelectables.Count <= 1) return;
+
+                // 按照位置排序，设置导航目标
+                // 对于每个按钮，找到最近的上方、下方、左方、右方的按钮
+                for (int i = 0; i < visibleSelectables.Count; i++)
+                {
+                    var current = visibleSelectables[i];
+                    var nav = current.navigation;
+                    nav.mode = Navigation.Mode.Explicit;
+
+                    Vector2 currentPos = current.transform.position;
+
+                    Selectable nearestUp = null;
+                    Selectable nearestDown = null;
+                    Selectable nearestLeft = null;
+                    Selectable nearestRight = null;
+
+                    float nearestUpDist = float.MaxValue;
+                    float nearestDownDist = float.MaxValue;
+                    float nearestLeftDist = float.MaxValue;
+                    float nearestRightDist = float.MaxValue;
+
+                    for (int j = 0; j < visibleSelectables.Count; j++)
+                    {
+                        if (i == j) continue;
+
+                        var other = visibleSelectables[j];
+                        Vector2 otherPos = other.transform.position;
+
+                        // 计算方向和距离
+                        float dx = otherPos.x - currentPos.x;
+                        float dy = otherPos.y - currentPos.y;
+                        float dist = new Vector2(dx, dy).magnitude;
+
+                        // 判断方向（允许一定的角度偏差）
+                        float angle = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
+
+                        // 右方：角度在 -45 到 45 度之间
+                        if (angle > -45 && angle <= 45 && dx > 0)
+                        {
+                            if (dist < nearestRightDist)
+                            {
+                                nearestRight = other;
+                                nearestRightDist = dist;
+                            }
+                        }
+                        // 左方：角度在 135 到 225 度之间（或 -135 到 -180 度）
+                        else if ((angle > 135 || angle <= -135) && dx < 0)
+                        {
+                            if (dist < nearestLeftDist)
+                            {
+                                nearestLeft = other;
+                                nearestLeftDist = dist;
+                            }
+                        }
+                        // 上方：角度在 45 到 135 度之间
+                        else if (angle > 45 && angle <= 135 && dy > 0)
+                        {
+                            if (dist < nearestUpDist)
+                            {
+                                nearestUp = other;
+                                nearestUpDist = dist;
+                            }
+                        }
+                        // 下方：角度在 -135 到 -45 度之间
+                        else if (angle > -135 && angle <= -45 && dy < 0)
+                        {
+                            if (dist < nearestDownDist)
+                            {
+                                nearestDown = other;
+                                nearestDownDist = dist;
+                            }
+                        }
+                    }
+
+                    nav.selectOnUp = nearestUp;
+                    nav.selectOnDown = nearestDown;
+                    nav.selectOnLeft = nearestLeft;
+                    nav.selectOnRight = nearestRight;
+
+                    current.navigation = nav;
+                }
+
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo($"手动导航 - 已为 {visibleSelectables.Count} 个可见元素设置导航目标");
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"手动设置导航时出错: {e.Message}");
                 }
             }
         }
@@ -389,6 +648,9 @@ namespace HuXiangLianPian.Accessibility
                         break;
                     case MenuType.Backlog:
                         ui = uiManager.GetUI<IBacklogUI>();
+                        break;
+                    case MenuType.Confirmation:
+                        ui = uiManager.GetUI<IConfirmationUI>();
                         break;
                 }
 
@@ -477,6 +739,18 @@ namespace HuXiangLianPian.Accessibility
         private void HandleSelectionChanged(GameObject selected, bool force = false)
         {
             if (selected == null) return;
+
+            // 更新当前滑块
+            var slider = selected.GetComponent<Slider>();
+            if (slider != null)
+            {
+                _currentSlider = slider;
+                _lastSliderValue = slider.value;
+            }
+            else
+            {
+                _currentSlider = null;
+            }
 
             // 防止频繁朗读
             if (!force && Time.unscaledTime - _lastAnnounceTime < MIN_ANNOUNCE_INTERVAL)
@@ -705,6 +979,45 @@ namespace HuXiangLianPian.Accessibility
             }
 
             return $"{label}，{Mathf.RoundToInt(valuePercent)}%";
+        }
+
+        /// <summary>
+        /// 检查滑块值是否变化，如果变化则实时朗读新值。
+        /// </summary>
+        private void CheckSliderValueChanged()
+        {
+            if (_currentSlider == null) return;
+
+            try
+            {
+                float currentValue = _currentSlider.value;
+                if (Mathf.Abs(currentValue - _lastSliderValue) > 0.001f)
+                {
+                    _lastSliderValue = currentValue;
+
+                    // 朗读新值（只朗读百分比，不重复朗读名称）
+                    float valuePercent = 0f;
+                    if (_currentSlider.maxValue > _currentSlider.minValue)
+                    {
+                        valuePercent = (currentValue - _currentSlider.minValue) / (_currentSlider.maxValue - _currentSlider.minValue) * 100f;
+                    }
+
+                    string valueText = $"{Mathf.RoundToInt(valuePercent)}%";
+                    ScreenReader.Say(valueText);
+
+                    if (Main.DebugMode)
+                    {
+                        DebugLogger.Log(LogCategory.Handler, "MenuHandler", $"滑块值变化: {_currentSlider.name} -> {valueText}");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"检查滑块值变化时出错: {e.Message}");
+                }
+            }
         }
 
         /// <summary>
