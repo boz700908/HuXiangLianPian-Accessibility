@@ -18,11 +18,11 @@
   <!-- MelonLoader 引用 -->
   <ItemGroup>
     <Reference Include="MelonLoader">
-      <HintPath>$(GameDir)\MelonLoader\net35\MelonLoader.dll</HintPath>
+      <HintPath>$(GameDir)\MelonLoader\net472\MelonLoader.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>$(GameDir)\MelonLoader\net35\0Harmony.dll</HintPath>
+      <HintPath>$(GameDir)\MelonLoader\net472\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -30,15 +30,15 @@
   <!-- Unity 引用 -->
   <ItemGroup>
     <Reference Include="UnityEngine">
-      <HintPath>$(GameDir)\HuXiangLianPian_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(GameDir)\HuXiangLianPian_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>$(GameDir)\HuXiangLianPian_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
@@ -46,11 +46,11 @@
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>$(GameDir)\HuXiangLianPian_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>$(GameDir)\HuXiangLianPian_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -58,7 +58,7 @@
   <!-- 游戏主程序集 -->
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(GameDir)\HuXiangLianPian_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(GameDir)\$(GameName)_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
