@@ -54,7 +54,7 @@ namespace HuXiangLianPian.Accessibility
             if (Time.unscaledTime - _lastLogTime > LOG_INTERVAL)
             {
                 _lastLogTime = Time.unscaledTime;
-                Main.Log.LogInfo($"MenuHandler状态 - EventSystem: {(EventSystem.current != null ? "存在" : "不存在")}, 当前菜单: {_currentMenuType}");
+                LogStatus();
             }
 
             if (EventSystem.current == null) return;
@@ -69,6 +69,52 @@ namespace HuXiangLianPian.Accessibility
             {
                 _lastSelectedObject = currentSelected;
                 HandleSelectionChanged(currentSelected);
+            }
+        }
+
+        /// <summary>
+        /// 输出状态日志（调试用）。
+        /// </summary>
+        private void LogStatus()
+        {
+            Main.Log.LogInfo($"MenuHandler状态 - EventSystem: {(EventSystem.current != null ? "存在" : "不存在")}, 当前菜单: {_currentMenuType}");
+
+            try
+            {
+                var uiManager = Engine.GetService<IUIManager>();
+                if (uiManager != null)
+                {
+                    // 收集所有UI信息
+                    var allUIs = new System.Collections.Generic.List<IManagedUI>();
+                    uiManager.GetManagedUIs(allUIs);
+
+                    Main.Log.LogInfo($"  已注册UI总数: {allUIs.Count}");
+
+                    // 列出可见的UI
+                    int visibleCount = 0;
+                    foreach (var ui in allUIs)
+                    {
+                        if (ui.Visible)
+                        {
+                            visibleCount++;
+                            string uiName = ui is UnityEngine.Object obj ? obj.name : ui.GetType().Name;
+                            Main.Log.LogInfo($"    可见UI: {uiName} ({ui.GetType().Name})");
+                        }
+                    }
+
+                    if (visibleCount == 0)
+                    {
+                        Main.Log.LogInfo("  没有可见的UI");
+                    }
+                }
+                else
+                {
+                    Main.Log.LogInfo("  IUIManager: null");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Main.Log.LogWarning($"  获取UI列表时出错: {e.GetType().Name} - {e.Message}");
             }
         }
 
