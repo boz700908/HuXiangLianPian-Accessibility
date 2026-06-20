@@ -62,12 +62,25 @@ namespace HuXiangLianPian.Accessibility
         void Awake()
         {
             Log = Logger;
+            Log.LogInfo("无障碍Mod正在启动...");
+            Log.LogInfo($"调试模式: {(DebugMode ? "开启" : "关闭")}");
+
             ModConfig.Initialize(Config);
+            Log.LogInfo("配置已初始化");
+
             ScreenReader.Initialize();
+            Log.LogInfo("屏幕阅读器已初始化");
+
             Loc.Initialize();
+            Log.LogInfo("本地化已初始化");
+
             InitializeHandlers();
+            Log.LogInfo("处理器已初始化");
+
             SceneManager.sceneLoaded += OnSceneLoaded;
             StartCoroutine(AnnounceStartupDelayed());
+
+            Log.LogInfo("无障碍Mod启动完成");
         }
 
         private void InitializeHandlers()
