@@ -61,6 +61,8 @@ namespace HuXiangLianPian.Accessibility
         private MenuHandler _menuHandler;
         // private DialogHandler _dialogHandler;
         // private SettingsHandler _settingsHandler;
+
+        private bool _menuHandlerErrorLogged = false;
         #endregion
 
         #region Lifecycle
@@ -264,9 +266,21 @@ namespace HuXiangLianPian.Accessibility
         #region Handler Updates
         private void UpdateHandlers()
         {
-            // 暂时注释掉，先确认Mod基本生命周期正常
             // 对需要每帧检查的处理器调用 Update()
-            // _menuHandler.Update();
+            try
+            {
+                _menuHandler.Update();
+            }
+            catch (System.Exception e)
+            {
+                // 只输出一次异常，避免刷屏
+                if (!_menuHandlerErrorLogged)
+                {
+                    _menuHandlerErrorLogged = true;
+                    Log.LogError($"MenuHandler.Update() 出错: {e.GetType().Name} - {e.Message}");
+                    Log.LogError($"堆栈跟踪: {e.StackTrace}");
+                }
+            }
             // _dialogHandler.Update();
         }
         #endregion
