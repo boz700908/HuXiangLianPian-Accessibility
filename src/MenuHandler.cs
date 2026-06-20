@@ -551,19 +551,27 @@ namespace HuXiangLianPian.Accessibility
         {
             if (labeledButton == null) return string.Empty;
 
+            // 调试：确认方法被调用
+            if (Main.DebugMode)
+            {
+                Main.Log.LogInfo($"GetLabeledButtonText 被调用: {labeledButton.name}, 类型: {labeledButton.GetType().FullName}");
+            }
+
             try
             {
                 // 尝试获取Label属性（Naninovel中常见的命名）
                 var labelProperty = labeledButton.GetType().GetProperty("Label",
                     System.Reflection.BindingFlags.Public |
                     System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.IgnoreCase);
+                    System.Reflection.BindingFlags.IgnoreCase |
+                    System.Reflection.BindingFlags.FlattenHierarchy);
 
                 if (labelProperty != null)
                 {
                     var labelValue = labelProperty.GetValue(labeledButton);
                     if (labelValue != null)
                     {
+                        if (Main.DebugMode) Main.Log.LogInfo($"  找到Label属性: {labelValue}");
                         // 如果是LocalizableText类型，转换为string
                         if (labelValue is LocalizableText localizableText)
                         {
@@ -577,13 +585,15 @@ namespace HuXiangLianPian.Accessibility
                 var textProperty = labeledButton.GetType().GetProperty("Text",
                     System.Reflection.BindingFlags.Public |
                     System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.IgnoreCase);
+                    System.Reflection.BindingFlags.IgnoreCase |
+                    System.Reflection.BindingFlags.FlattenHierarchy);
 
                 if (textProperty != null)
                 {
                     var textValue = textProperty.GetValue(labeledButton);
                     if (textValue != null)
                     {
+                        if (Main.DebugMode) Main.Log.LogInfo($"  找到Text属性: {textValue}");
                         return textValue.ToString();
                     }
                 }
@@ -592,37 +602,82 @@ namespace HuXiangLianPian.Accessibility
                 var labelTextProperty = labeledButton.GetType().GetProperty("LabelText",
                     System.Reflection.BindingFlags.Public |
                     System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.IgnoreCase);
+                    System.Reflection.BindingFlags.IgnoreCase |
+                    System.Reflection.BindingFlags.FlattenHierarchy);
 
                 if (labelTextProperty != null)
                 {
                     var labelTextValue = labelTextProperty.GetValue(labeledButton);
                     if (labelTextValue != null)
                     {
+                        if (Main.DebugMode) Main.Log.LogInfo($"  找到LabelText属性: {labelTextValue}");
                         return labelTextValue.ToString();
                     }
                 }
 
-                // 调试模式：列出所有公开属性，方便后续完善
+                // 尝试获取字段
+                var labelTextField = labeledButton.GetType().GetField("Label",
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.IgnoreCase |
+                    System.Reflection.BindingFlags.FlattenHierarchy);
+
+                if (labelTextField != null)
+                {
+                    var labelFieldValue = labelTextField.GetValue(labeledButton);
+                    if (labelFieldValue != null)
+                    {
+                        if (Main.DebugMode) Main.Log.LogInfo($"  找到Label字段: {labelFieldValue}");
+                        return labelFieldValue.ToString();
+                    }
+                }
+
+                // 调试模式：列出所有公开属性和字段，方便后续完善
                 if (Main.DebugMode)
                 {
+                    Main.Log.LogInfo($"  --- LabeledButton完整结构 ({labeledButton.name}) ---");
+
                     var allProperties = labeledButton.GetType().GetProperties(
                         System.Reflection.BindingFlags.Public |
-                        System.Reflection.BindingFlags.Instance);
+                        System.Reflection.BindingFlags.Instance |
+                        System.Reflection.BindingFlags.FlattenHierarchy);
 
-                    Main.Log.LogInfo($"LabeledButton公开属性列表 ({labeledButton.name}):");
+                    Main.Log.LogInfo($"  公开属性数量: {allProperties.Length}");
                     foreach (var prop in allProperties)
                     {
                         try
                         {
                             var value = prop.GetValue(labeledButton);
                             string valueStr = value != null ? value.ToString() : "null";
-                            if (valueStr.Length > 50) valueStr = valueStr.Substring(0, 50) + "...";
-                            Main.Log.LogInfo($"  {prop.Name} ({prop.PropertyType.Name}): {valueStr}");
+                            if (valueStr.Length > 80) valueStr = valueStr.Substring(0, 80) + "...";
+                            Main.Log.LogInfo($"    [Prop] {prop.Name} ({prop.PropertyType.Name}): {valueStr}");
                         }
-                        catch
+                        catch (System.Exception e)
                         {
-                            Main.Log.LogInfo($"  {prop.Name} ({prop.PropertyType.Name}): <无法读取>");
+                            Main.Log.LogInfo($"    [Prop] {prop.Name} ({prop.PropertyType.Name}): <读取失败: {e.Message}>");
+                        }
+                    }
+
+                    var allFields = labeledButton.GetType().GetFields(
+                        System.Reflection.BindingFlags.Public |
+                        System.Reflection.BindingFlags.NonPublic |
+                        System.Reflection.BindingFlags.Instance |
+                        System.Reflection.BindingFlags.FlattenHierarchy);
+
+                    Main.Log.LogInfo($"  字段数量: {allFields.Length}");
+                    foreach (var field in allFields)
+                    {
+                        try
+                        {
+                            var value = field.GetValue(labeledButton);
+                            string valueStr = value != null ? value.ToString() : "null";
+                            if (valueStr.Length > 80) valueStr = valueStr.Substring(0, 80) + "...";
+                            Main.Log.LogInfo($"    [Field] {field.Name} ({field.FieldType.Name}): {valueStr}");
+                        }
+                        catch (System.Exception e)
+                        {
+                            Main.Log.LogInfo($"    [Field] {field.Name} ({field.FieldType.Name}): <读取失败: {e.Message}>");
                         }
                     }
                 }
@@ -631,21 +686,40 @@ namespace HuXiangLianPian.Accessibility
             {
                 if (Main.DebugMode)
                 {
-                    Main.Log.LogWarning($"获取LabeledButton文本时出错: {e.Message}");
+                    Main.Log.LogWarning($"获取LabeledButton文本时出错: {e.GetType().Name} - {e.Message}");
+                    Main.Log.LogWarning($"堆栈跟踪: {e.StackTrace}");
                 }
             }
 
-            // 最后尝试获取子组件中的文本
-            var tmpText = labeledButton.GetComponentInChildren<TMP_Text>();
+            // 最后尝试获取子组件中的文本（包括inactive的子对象）
+            var tmpText = labeledButton.GetComponentInChildren<TMP_Text>(true);
             if (tmpText != null && !string.IsNullOrEmpty(tmpText.text))
             {
+                if (Main.DebugMode) Main.Log.LogInfo($"  找到子TMP_Text: {tmpText.text}");
                 return tmpText.text;
             }
 
-            var text = labeledButton.GetComponentInChildren<Text>();
+            var text = labeledButton.GetComponentInChildren<Text>(true);
             if (text != null && !string.IsNullOrEmpty(text.text))
             {
+                if (Main.DebugMode) Main.Log.LogInfo($"  找到子Text: {text.text}");
                 return text.text;
+            }
+
+            // 调试：列出所有子对象，看看文本在哪里
+            if (Main.DebugMode)
+            {
+                Main.Log.LogInfo($"  --- LabeledButton子对象列表 ({labeledButton.name}) ---");
+                var allChildren = labeledButton.GetComponentsInChildren<Transform>(true);
+                foreach (var child in allChildren)
+                {
+                    var childTmpText = child.GetComponent<TMP_Text>();
+                    var childText = child.GetComponent<Text>();
+                    string textInfo = string.Empty;
+                    if (childTmpText != null) textInfo += $" TMP_Text: '{childTmpText.text}'";
+                    if (childText != null) textInfo += $" Text: '{childText.text}'";
+                    Main.Log.LogInfo($"    {child.gameObject.name}{textInfo}");
+                }
             }
 
             // 返回按钮名称
