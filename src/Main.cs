@@ -37,6 +37,8 @@ namespace HuXiangLianPian.Accessibility
     {
         #region Fields
         private bool _gameReady = false;
+        private float _lastReadyCheckLogTime = 0f;
+        private const float READY_CHECK_LOG_INTERVAL = 3f; // 每3秒打一次日志
 
         /// <summary>
         /// 调试模式 - 开启时记录所有屏幕阅读器输出和详细游戏状态。
@@ -100,15 +102,30 @@ namespace HuXiangLianPian.Accessibility
             // 检查Naninovel引擎是否已初始化
             try
             {
-                if (Engine.Initialized)
+                bool engineInitialized = Engine.Initialized;
+
+                // 每隔几秒打一次日志，避免刷屏
+                if (Time.unscaledTime - _lastReadyCheckLogTime > READY_CHECK_LOG_INTERVAL)
+                {
+                    _lastReadyCheckLogTime = Time.unscaledTime;
+                    Log.LogInfo($"检测Naninovel引擎状态: Initialized={engineInitialized}");
+                }
+
+                if (engineInitialized)
                 {
                     _gameReady = true;
-                    Log.LogInfo("Naninovel引擎已就绪");
+                    Log.LogInfo("Naninovel引擎已就绪，开始初始化无障碍功能");
                     OnGameReady();
                 }
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
+                // 每隔几秒打一次日志
+                if (Time.unscaledTime - _lastReadyCheckLogTime > READY_CHECK_LOG_INTERVAL)
+                {
+                    _lastReadyCheckLogTime = Time.unscaledTime;
+                    Log.LogWarning($"检测Naninovel引擎时出错: {e.Message}");
+                }
                 // 引擎还没准备好，忽略异常
             }
 
@@ -198,7 +215,6 @@ namespace HuXiangLianPian.Accessibility
         {
             string help = Loc.Get("help_title") + " " +
                 "F1 帮助。 " +
-                "Ctrl+F11 Mod设置。 " +
                 "F12 切换调试模式。 ";
                 // 实现更多功能后添加：
                 // "F2 对话状态。 " +
