@@ -198,6 +198,7 @@ namespace HuXiangLianPian.Accessibility
         {
             string help = Loc.Get("help_title") + " " +
                 "F1 帮助。 " +
+                "Ctrl+F11 Mod设置。 " +
                 "F12 切换调试模式。 ";
                 // 实现更多功能后添加：
                 // "F2 对话状态。 " +

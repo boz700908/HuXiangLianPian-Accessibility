@@ -190,33 +190,3 @@ namespace HuXiangLianPian.Accessibility
         #endregion
     }
 }
-
-// ============================================================================
-// INTEGRATION EXAMPLE (add to Main.cs):
-// ============================================================================
-//
-// In Awake():
-//     ModConfig.Initialize(Config);
-//
-// In ProcessHotkeys():
-//     // Ctrl+F11 = Mod Settings
-//     if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.F11))
-//     {
-//         ModConfig.ToggleMenu();
-//         return true;
-//     }
-//
-// In Update(), BEFORE other handler updates:
-//     if (ModConfig.IsMenuOpen)
-//     {
-//         ModConfig.Update();
-//         return; // Don't process other input while settings are open
-//     }
-//
-// In a handler, use settings:
-//     if (ModConfig.Verbosity >= 2)
-//         ScreenReader.SayQueued($"Item details: {item.Description}");
-//
-//     if (ModConfig.AnnounceEmptyStates)
-//         ScreenReader.Say("Inventory empty");
-// ============================================================================
