@@ -3,18 +3,18 @@ using UnityEngine;
 using System.Collections;
 
 // ============================================================================
-// KRITISCH: Zugriff auf Spielcode
+// 重要：游戏代码访问
 // ============================================================================
-// Jeder Zugriff auf Spielklassen VOR dem vollständigen Laden crasht!
+// 在游戏完全加载之前访问任何游戏类都会导致崩溃！
 //
-// VERBOTEN in OnInitializeMelon() oder früher:
-//   - Spielmanager-Singletons (GameManager.i, AudioManager.instance, etc.)
-//   - typeof(SpielKlasse) in Harmony-Attributen
+// 禁止在 OnInitializeMelon() 或更早的时候：
+//   - 访问游戏管理器单例（GameManager.i, AudioManager.instance 等）
+//   - 在 Harmony 特性中使用 typeof(游戏类)
 //
-// ERLAUBT erst ab OnSceneWasLoaded() / wenn CheckGameReady() true ist.
+// 只有在 OnSceneWasLoaded() 之后或 CheckGameReady() 返回 true 时才允许。
 //
-// Bei Crashes oder stillem Fehlschlagen:
-//   Siehe docs/technical-reference.md Abschnitt "KRITISCH: Zugriff auf Spielcode"
+// 如果遇到崩溃或静默失败：
+//   参见 docs/technical-reference.md 中的 "重要：游戏代码访问" 部分
 // ============================================================================
 
 [assembly: MelonInfo(typeof(HuXiangLianPian.Accessibility.Main), "HuXiangLianPianAccessibility", "1.0.0", "boz700908")]
@@ -23,37 +23,34 @@ using System.Collections;
 namespace HuXiangLianPian.Accessibility
 {
     /// <summary>
-    /// Main mod entry point. Coordinates all handlers and processes global hotkeys.
+    /// Mod 主入口点。协调所有处理器并处理全局快捷键。
     ///
-    /// BEST PRACTICE: Keep this class SMALL!
-    /// - Only lifecycle methods (OnInitializeMelon, OnUpdate, OnApplicationQuit)
-    /// - Only global hotkey dispatch (F1-F12, Tab, Enter)
-    /// - Only handler instantiation and update calls
+    /// 最佳实践：保持这个类精简！
+    /// - 只包含生命周期方法（OnInitializeMelon, OnUpdate, OnApplicationQuit）
+    /// - 只包含全局快捷键分发（F1-F12, Tab, Enter）
+    /// - 只包含处理器实例化和更新调用
     ///
-    /// Put ALL feature logic in separate Handler classes.
-    /// This makes the code easier to maintain and test.
+    /// 把所有功能逻辑放在单独的 Handler 类中。
+    /// 这样代码更容易维护和测试。
     /// </summary>
     public class Main : MelonMod
     {
         #region Fields
-
         private bool _gameReady = false;
 
         /// <summary>
-        /// Debug mode - when true, logs all screenreader output and detailed game state.
-        /// Toggle with F12.
+        /// 调试模式 - 开启时记录所有屏幕阅读器输出和详细游戏状态。
+        /// 按 F12 切换。
         /// </summary>
         public static bool DebugMode = false;
 
-        // Handlers - one per feature/screen
-        // private InventoryHandler _inventoryHandler;
+        // 处理器 - 每个功能/界面一个
         // private DialogHandler _dialogHandler;
-        // private ShopHandler _shopHandler;
-
+        // private MenuHandler _menuHandler;
+        // private SettingsHandler _settingsHandler;
         #endregion
 
         #region Lifecycle
-
         public override void OnInitializeMelon()
         {
             ScreenReader.Initialize();
@@ -64,27 +61,27 @@ namespace HuXiangLianPian.Accessibility
 
         private void InitializeHandlers()
         {
-            // Create handler instances here
-            // _inventoryHandler = new InventoryHandler();
+            // 在这里创建处理器实例
             // _dialogHandler = new DialogHandler();
+            // _menuHandler = new MenuHandler();
         }
 
         private IEnumerator AnnounceStartupDelayed()
         {
-            // Short delay so screenreader is ready
+            // 短暂延迟，确保屏幕阅读器准备就绪
             yield return new WaitForSeconds(1f);
             ScreenReader.Say(Loc.Get("mod_loaded"));
         }
 
         public override void OnUpdate()
         {
-            // Wait for game to be ready
+            // 等待游戏准备就绪
             if (!CheckGameReady()) return;
 
-            // Process global hotkeys first
+            // 先处理全局快捷键
             if (ProcessHotkeys()) return;
 
-            // Update all handlers
+            // 更新所有处理器
             UpdateHandlers();
         }
 
@@ -92,11 +89,12 @@ namespace HuXiangLianPian.Accessibility
         {
             if (_gameReady) return true;
 
-            // Check for game singletons - adjust to your game!
-            // if (GameManager.instance != null && UIManager.instance != null)
+            // 检查游戏单例 - 根据你的游戏调整！
+            // 对于 Naninovel 引擎，可以检查 Naninovel.Engine 或相关管理器
+            // if (/* 游戏就绪条件 */)
             // {
             //     _gameReady = true;
-            //     MelonLogger.Msg("Game ready");
+            //     MelonLogger.Msg("游戏就绪");
             // }
 
             return _gameReady;
@@ -104,91 +102,84 @@ namespace HuXiangLianPian.Accessibility
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
-            MelonLogger.Msg($"Scene loaded: {sceneName}");
-            DebugLogger.LogState($"Scene changed to: {sceneName}");
-            _gameReady = false; // Reset on scene change
+            MelonLogger.Msg($"场景已加载: {sceneName}");
+            DebugLogger.LogState($"场景切换为: {sceneName}");
+            _gameReady = false; // 场景切换时重置
         }
 
         public override void OnApplicationQuit()
         {
             ScreenReader.Shutdown();
         }
-
         #endregion
 
         #region Hotkeys
-
         /// <summary>
-        /// Processes global hotkeys. Returns true if a key was handled.
-        /// Only dispatch to handlers here - don't put logic in Main!
+        /// 处理全局快捷键。如果处理了按键返回 true。
+        /// 只在这里分发到处理器 - 不要把逻辑放在 Main 里！
         /// </summary>
         private bool ProcessHotkeys()
         {
-            // F12 = Toggle debug mode
+            // F12 = 切换调试模式
             if (Input.GetKeyDown(KeyCode.F12))
             {
                 DebugMode = !DebugMode;
-                var status = DebugMode ? "enabled" : "disabled";
-                MelonLogger.Msg($"Debug mode {status}");
-                ScreenReader.Say($"Debug mode {status}");
+                var status = DebugMode ? Loc.Get("debug_mode_enabled") : Loc.Get("debug_mode_disabled");
+                MelonLogger.Msg(status);
+                ScreenReader.Say(status);
                 return true;
             }
 
-            // F1 = Help (always in Main)
+            // F1 = 帮助（总是在 Main 中处理）
             if (Input.GetKeyDown(KeyCode.F1))
             {
-                DebugLogger.LogInput("F1", "Help");
+                DebugLogger.LogInput("F1", "帮助");
                 AnnounceHelp();
                 return true;
             }
 
-            // Other F-keys dispatch to handlers:
+            // 其他 F 键分发到处理器：
             // if (Input.GetKeyDown(KeyCode.F2))
             // {
-            //     DebugLogger.LogInput("F2", "InventoryStatus");
-            //     _inventoryHandler.AnnounceStatus();
+            //     DebugLogger.LogInput("F2", "对话状态");
+            //     _dialogHandler.AnnounceStatus();
             //     return true;
             // }
 
-            // Tab = Navigate
+            // Tab = 导航
             // if (Input.GetKeyDown(KeyCode.Tab))
             // {
             //     int direction = Input.GetKey(KeyCode.LeftShift) ? -1 : 1;
-            //     DebugLogger.LogInput(direction > 0 ? "Tab" : "Shift+Tab", "Navigate");
+            //     DebugLogger.LogInput(direction > 0 ? "Tab" : "Shift+Tab", "导航");
             //     _buttonNavigator.Navigate(direction);
             //     return true;
             // }
 
             return false;
         }
-
         #endregion
 
         #region Handler Updates
-
         private void UpdateHandlers()
         {
-            // Call Update() on all handlers that need per-frame checks
+            // 对需要每帧检查的处理器调用 Update()
             // _dialogHandler.Update();
-            // _inventoryHandler.Update();
+            // _menuHandler.Update();
         }
-
         #endregion
 
         #region Help
-
         private void AnnounceHelp()
         {
-            string help = "Key bindings: " +
-                "F1 Help. ";
-                // Add more keys as you implement them:
-                // "F2 Status. " +
-                // "Tab nächstes Element. " +
-                // "Enter aktivieren.";
-
+            string help = Loc.Get("help_title") + " " +
+                "F1 帮助。 " +
+                "F12 切换调试模式。 ";
+                // 实现更多功能后添加：
+                // "F2 对话状态。 " +
+                // "Tab 下一个元素。 " +
+                // "回车 确认。";
             ScreenReader.Say(help);
         }
-
         #endregion
     }
 }

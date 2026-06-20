@@ -1,83 +1,67 @@
-# Project Status: HuXiangLianPianAccessibility
+# 痴情妹妹纱雪的兄控日记 - 无障碍Mod 项目状态
 
-## Project Info
-- **Game:** 痴情妹妹纱雪的兄控日记 Demo (狐想恋翩-妹妹篇)
-- **Engine:** Unity + Naninovel
-- **Architecture:** 64-bit
-- **Mod Loader:** MelonLoader v0.7.3
-- **Runtime:** net35 (Mono)
-- **Game directory:** /home/user/.super_doubao/super-doubao-runtime/workspace/game/
-- **User experience level:** A little (has some experience with modding)
-- **User game familiarity:** Somewhat (knows most of the game)
+## 游戏信息
+- **游戏名称**: 痴情妹妹纱雪的兄控日记 Demo（狐想恋翩-妹妹篇）
+- **Steam App ID**: 4105740 (Demo) / 3946250 (正式版)
+- **引擎**: Unity + Naninovel
+- **运行时**: Mono (64位)
+- **开发者**: StationWorks / TamaMako gaming
+- **游戏内部名称**: HuXiangLianPian
+- **Windows安装路径**: C:\Program Files (x86)\Steam\steamapps\common\狐想恋翩-梦妹以求- Demo
+- **游戏大小**: 约717MB
+- **特点**: 国产美少女游戏，含五篇ASMR音声，无刀无虐
 
-## Setup Progress
-- [x] Experience level determined
-- [x] Game name and path confirmed
-- [x] Game familiarity assessed
-- [x] Game directory auto-check completed
-- [x] Mod loader selected (MelonLoader) - downloading/installing
-- [x] Tolk DLLs in place (all x64 files copied)
-- [x] .NET SDK available (8.0.422)
-- [ ] Decompiler tool ready
-- [ ] Game code decompiled to `decompiled/`
-- [ ] Tutorial texts extracted (if applicable)
-- [ ] Multilingual support decided
-- [x] Project directory set up (csproj, Main.cs, etc.)
-- [ ] CLAUDE.md updated with project-specific values
-- [ ] First build successful
-- [ ] "Mod loaded" announcement working in game
+## Mod信息
+- **Mod名称**: HuXiangLianPianAccessibility
+- **命名空间**: HuXiangLianPian.Accessibility
+- **作者**: boz700908
+- **Mod加载器**: MelonLoader
+- **目标框架**: net472
 
-## Current Phase
-**Phase:** Setup
-**Currently working on:** Setting up build environment, waiting for MelonLoader download
-**Blocked by:** MelonLoader download speed (GitHub direct download is slow)
+## 开发进度
 
-## Codebase Analysis Progress
-### GATE: Tier 1 MUST be complete before Phase 2 (Framework)!
-- [ ] 1.1 Structure overview (namespaces, singletons) → documented in game-api.md
-- [ ] 1.2 Input system — ALL game key bindings documented in game-api.md "Game Key Bindings"
-- [ ] 1.2 Input system — Safe mod keys identified and listed in game-api.md "Safe Mod Keys"
-- [ ] 1.3 UI system (base classes, text access patterns, Reflection needed?)
-- [ ] 1.4 State management decision → documented in "Architecture Decisions" below
-- [ ] 1.5 Localization: game's language system analyzed (only if multilingual)
+### Phase 0: 项目设置
+- [x] 游戏分析（引擎、架构、运行时）
+- [x] Mod加载器选择（MelonLoader）
+- [x] Tolk屏幕阅读器集成
+- [x] .NET SDK 配置
+- [ ] MelonLoader 安装
+- [ ] 反编译游戏代码
+- [ ] 项目结构搭建
+- [ ] 首次编译测试
 
-### GATE: Relevant Tier 2 items MUST be done before implementing each feature!
-- [ ] 1.6 Game mechanics (analyzed as needed per feature)
-- [ ] 1.7 Status/feedback systems
-- [ ] 1.8 Event system / Harmony patch points
-- [ ] 1.9 Results documented in `docs/game-api.md`
-- [ ] 1.10 Tutorial analysis (when relevant)
+### Phase 1: 代码分析
+- [ ] Tier 1: 结构概览
+- [ ] Tier 1: 输入系统
+- [ ] Tier 1: UI系统
+- [ ] Tier 1: 状态管理
+- [ ] Tier 1: 本地化
+- [ ] Tier 2: 游戏机制
+- [ ] Tier 2: 状态系统
+- [ ] Tier 2: 事件系统
 
-## Game Key Bindings (Original)
-<!-- CRITICAL: Fill this during Tier 1 analysis! Every key the game uses.
-Without this list, mod keys WILL conflict with game controls. -->
-- (not yet documented — MUST be done before Phase 2)
+### Phase 2: 基础框架
+- [ ] 主菜单导航
+- [ ] 对话文本朗读
+- [ ] 设置菜单
+- [ ] 存档/读档
 
-## Implemented Features
-List features with their status:
-- (none yet)
+### Phase 3: 功能完善
+- [ ] 完整菜单支持
+- [ ] 游戏内UI导航
+- [ ] 快捷键系统
+- [ ] 调试模式
 
-## Pending Tests
-What the user should test in the next game session:
-- (none yet)
+## 技术栈
+- **语言**: C#
+- **Mod框架**: MelonLoader + Harmony
+- **屏幕阅读器**: Tolk
+- **游戏引擎**: Unity + Naninovel
 
-## Known Issues
-- (none yet)
+## 仓库地址
+https://github.com/boz700908/HuXiangLianPian-Accessibility
 
-## Architecture Decisions
-Document important decisions so future sessions understand the reasoning:
-- Using MelonLoader (user preference over BepInEx)
-- Tolk from boz700908/tolk repository (user's own build)
-- All Tolk DLLs copied to game directory (not just the two mentioned in setup guide)
-- GitHub repository for code sync (user clones and tests on Windows)
-
-## Key Bindings (Mod)
-- F1: Help
-- F12: Toggle debug mode
-
-## Notes for Next Session
-- GitHub repo: https://github.com/boz700908/HuXiangLianPian-Accessibility
-- Game uses Naninovel visual novel engine - API is publicly documented
-- Game internal name: HuXiangLianPian (from app.info)
-- Developer: StationWorks
-- User will provide Windows game path for direct build and test
+## 开发模式
+- Linux 工作区编译测试
+- Windows 真机测试
+- GitHub 代码同步

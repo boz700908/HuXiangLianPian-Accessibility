@@ -1,381 +1,289 @@
-# [SPIELNAME] - Game API Documentation
+# 狐想恋翩 - 游戏 API 文档
 
-## Übersicht
-
-- **Spiel:** [SPIELNAME]
-- **Engine:** Unity [VERSION]
-- **Runtime:** [net35/net6 - aus MelonLoader-Log]
-- **Architektur:** [32-Bit/64-Bit]
-- **Entwickler:** [ENTWICKLERNAME - EXAKT aus MelonLoader-Log]
-
----
-
-## 1. Singleton-Zugangspunkte
-
-Die wichtigsten statischen Instanzen zum Zugriff auf Spielsysteme.
-
-### Haupt-Controller
-
-- `[Klassenname].instance` - [Beschreibung]
-  - Wichtige Properties: [Liste]
-  - Wichtige Methoden: [Liste]
-
-### UI-Management
-
-- `[UIManager].instance` - [Beschreibung]
-
-### Spieler
-
-- `[Player].instance` - [Beschreibung]
-
-### [Weitere Kategorien nach Bedarf]
+## 概述
+- **游戏:** 痴情妹妹纱雪的兄控日记 Demo（狐想恋翩-妹妹篇）
+- **引擎:** Unity + Naninovel
+- **运行时:** Mono (64位)
+- **架构:** 64-Bit
+- **开发者:** StationWorks / TamaMako gaming
+- **游戏内部名称:** HuXiangLianPian
 
 ---
 
-## 2. Spiel-Tastenbelegungen (NICHT im Mod überschreiben!)
+## 1. 引擎服务访问点
 
-**KRITISCH: Diese Tasten werden vom Spiel verwendet. Der Mod darf sie NICHT anderweitig belegen!**
+Naninovel 使用服务模式，通过 `Engine.GetService<TService>()` 静态方法获取各种引擎服务。
 
-### Bewegung
+### 核心服务
 
-- **[Taste]**: [Funktion] (Datei.cs:Zeile)
+- `Engine.GetService<IScriptPlayer>()` - 脚本播放器
+  - 功能：控制游戏脚本的播放、暂停、跳转
+  - 重要属性：`PlayedScript`, `PlaybackSpot`
+  - 重要方法：`Play()`, `Stop()`, `PreloadAndPlay()`
 
-### Aktionen
+- `Engine.GetService<ITextPrinterManager>()` - 文本打印机管理器
+  - 功能：管理所有文本打印机
+  - 重要方法：`GetPrinter(string id)`, `GetDefaultPrinter()`
 
-- **[Taste]**: [Funktion] (Datei.cs:Zeile)
+- `Engine.GetService<IUIManager>()` - UI 管理器
+  - 功能：管理所有 UI 面板
+  - 重要方法：`GetUI<TUI>()`, `ShowUI()`, `HideUI()`
 
-### Menü-Navigation
+- `Engine.GetService<ISaveSlotManager<GameStateMap>>()` - 存档管理器
+  - 功能：管理游戏存档
+  - 重要方法：`SaveAsync()`, `LoadAsync()`, `Exists()`
 
-- **[Taste]**: [Funktion] (Datei.cs:Zeile)
-
-### Kamera
-
-- **[Taste]**: [Funktion] (Datei.cs:Zeile)
-
-### Maussteuerung
-
-- **Linke Maustaste**: [Funktion]
-- **Rechte Maustaste**: [Funktion]
-- **Mittlere Maustaste**: [Funktion]
-- **Mausrad**: [Funktion]
-
-### Debug/Entwickler-Tasten
-
-- **[Taste]**: [Funktion] - nur wenn [Bedingung]
+- `Engine.GetService<IInputManager>()` - 输入管理器
+  - 功能：管理游戏输入
 
 ---
 
-## 3. Sichere Tasten für den Mod
+## 2. 游戏按键绑定
 
-Diese Tasten sind im Spiel NICHT belegt und können für Mod-Funktionen genutzt werden.
+**注意：这些是游戏默认使用的按键，Mod 不应冲突。**
 
-### Reserviert für Accessibility-Mod
+### 通用操作
+- **鼠标左键 / 空格 / Enter**: 推进对话
+- **Ctrl**: 跳过已读文本
+- **Tab**: 自动阅读模式
+- **Esc**: 打开/关闭菜单
 
-- **Tab**: Navigation zwischen UI-Elementen
-- **Enter**: Aktivieren/Bestätigen
-- **Escape**: [Bereits vom Spiel genutzt? Dann NICHT hier listen]
+### 菜单导航
+- **方向键**: 导航菜单项
+- **Enter**: 确认选择
+- **Esc**: 返回上一级
 
-### Frei verfügbar
-
-- **F1**: Hilfe anzeigen
-- **F2-F12**: [Liste der freien F-Tasten]
-- **Ziffernblock 0-9**: Quick-Actions
-- **[Weitere freie Tasten]**
-
-### Mit Vorsicht verwenden
-
-- **[Taste]**: [Grund zur Vorsicht]
-
----
-
-## 4. UI-System
-
-### UI-Basisklassen
-
-- `[BasisKlasse]` - Gemeinsame Basisklasse für UI-Fenster
-  - Öffnen: `[Methode]`
-  - Schließen: `[Methode]`
-  - Sichtbarkeit prüfen: `[Property/Methode]`
-
-### Alle UI-Fenster
-
-**Hauptmenü**
-- Klasse: `[Klassenname]`
-- Öffnen: `[Wie wird es geöffnet]`
-- Wichtige Elemente: [Buttons, Listen, etc.]
-- Besonderheiten: [Falls relevant]
-
-**Inventar**
-- Klasse: `[Klassenname]`
-- Öffnen: `[Taste oder Methode]`
-- Wichtige Elemente:
-  - Item-Slots: `[Klassenname für Slots]`
-  - Kategorien: [Falls vorhanden]
-- Besonderheiten: [Falls relevant]
-
-**Einstellungen**
-- Klasse: `[Klassenname]`
-- Öffnen: `[Wie]`
-- Wichtige Elemente: [Slider, Toggles, etc.]
-
-**[Weitere Fenster nach Bedarf...]**
-
-### UI-Navigation
-
-- Zurück-Navigation: `[Wie funktioniert Zurück?]`
-- Fenster-Stack: `[Gibt es einen Stack?]`
-- Modale Dialoge: `[Wie werden Dialoge angezeigt?]`
-
-### Text-Komponenten
-
-- Haupt-Text-Klasse: `[Text/TextMeshProUGUI/etc.]`
-- Text setzen: `[Methode]`
-- Tooltips: `[Klasse und Zugriff]`
+### 其他
+- **S**: 快速存档
+- **L**: 快速读档
+- **F1**: 帮助（Mod 可使用）
 
 ---
 
-## 5. Spielmechaniken - Feature-Katalog
+## 3. Mod 可安全使用的按键
 
-### Spieler-Charakter
+### 预留无障碍 Mod 按键
+- **F1**: 帮助/快捷键说明
+- **F2-F12**: 可用于 Mod 功能
+- **Tab**: （游戏已用，需注意）
+- **方向键**: （游戏已用，需注意）
 
-**Bewegung**
-- Klasse: `[Controller-Klasse]`
-- Steuerung: [WASD, Klick, etc.]
-- Besonderheiten: [Sprint, Schleichen, etc.]
-
-**Aktionen**
-- Interagieren: `[Methode/Taste]`
-- Angreifen: `[Methode/Taste]`
-- [Weitere Aktionen]
-
-**Status-Werte**
-- Gesundheit: `[Property-Pfad]` - Min/Max: [Werte]
-- [Weitere Status-Werte]
-
-### Inventar-System
-
-**Item-Struktur**
-- Basisklasse: `[Klassenname]`
-- Name: `[Property]`
-- Beschreibung: `[Property]`
-- Icon: `[Property]`
-- Stapelbar: `[Property]`
-- [Weitere Item-Eigenschaften]
-
-**Inventar-Zugriff**
-- Alle Items: `[Wie auf Items zugreifen]`
-- Item hinzufügen: `[Methode]`
-- Item entfernen: `[Methode]`
-- Item verwenden: `[Methode]`
-
-### Interaktions-System
-
-- Interface: `[IInteractable oder ähnlich]`
-- Interaktive Objekte finden: `[Methode]`
-- Interaktion auslösen: `[Methode]`
-- Interaktions-Reichweite: `[Property]`
-
-### Quest/Aufgaben-System
-
-- Aktive Quests: `[Zugriff]`
-- Quest-Ziele: `[Struktur]`
-- Quest-Fortschritt: `[Property]`
-- Quest-Belohnungen: `[Zugriff]`
-
-### Crafting/Bauen
-
-- Rezepte: `[Zugriff auf alle Rezepte]`
-- Rezept-Struktur:
-  - Benötigte Items: `[Property]`
-  - Ergebnis: `[Property]`
-  - Kann hergestellt werden: `[Methode]`
-- Crafting auslösen: `[Methode]`
-
-### Kampf-System
-
-- Angriff: `[Methode]`
-- Schaden berechnen: `[Methode]`
-- Ziel auswählen: `[Methode]`
-- Aktuelle Waffe: `[Property]`
-
-### Dialog-System
-
-- Dialog starten: `[Methode]`
-- Aktueller Dialog-Text: `[Property]`
-- Dialog-Optionen: `[Zugriff]`
-- Option auswählen: `[Methode]`
-
-### Handel/Shop-System
-
-- Shop öffnen: `[Methode]`
-- Verfügbare Waren: `[Zugriff]`
-- Kaufen: `[Methode]`
-- Verkaufen: `[Methode]`
-- Spieler-Währung: `[Zugriff]`
-
-### Karten/Map-System
-
-- Karte öffnen: `[Methode]`
-- Aktuelle Position: `[Property]`
-- Wegpunkte/Marker: `[Zugriff]`
-- Schnellreise: `[Methode]`
-
-### Fähigkeiten/Skills
-
-- Skill-Liste: `[Zugriff]`
-- Skill-Level: `[Property]`
-- Skill verwenden: `[Methode]`
-- Skill-Punkte: `[Property]`
-
-### [Weitere spielspezifische Systeme...]
+### 建议 Mod 按键
+- **F1**: 显示 Mod 帮助
+- **F2**: 切换调试模式
+- **F3**: 切换语音速度
+- **数字键 1-9**: 快速功能
 
 ---
 
-## 6. Status und Benachrichtigungen
+## 4. UI 系统
 
-### Spieler-Status
+### UI 接口命名空间
+所有 UI 接口都在 `Naninovel.UI` 命名空间下。
 
-- Gesundheit: `[Zugriff]`
-- [Weitere Status-Werte mit Zugriffspfad]
+### 内置 UI 列表
 
-### Benachrichtigungs-System
+**标题菜单 (Title UI)**
+- 接口: `ITitleUI`
+- 功能: 游戏主菜单
+- 包含: 开始游戏、继续、设置、退出
 
-- Nachricht anzeigen: `[Methode]`
-- Nachricht-Typen: [Info, Warnung, Fehler, etc.]
-- Aktive Nachrichten lesen: `[Zugriff]`
+**设置菜单 (Settings UI / Config UI)**
+- 接口: `ISettingsUI` 或 `IConfigUI`
+- 功能: 游戏设置
+- 包含: 音量、文本速度、自动阅读速度等
 
-### Tooltips
+**存档/读档菜单 (Save-Load UI)**
+- 接口: `ISaveLoadUI`
+- 功能: 存档和读档
+- 包含: 存档槽列表、分页
 
-- Tooltip-Klasse: `[Klassenname]`
-- Aktueller Tooltip-Text: `[Property]`
-- Tooltip für Item: `[Methode]`
+**历史记录面板 (Backlog Panel)**
+- 接口: `IBacklogUI`
+- 功能: 查看对话历史
 
----
+**CG 画廊 (CG Gallery)**
+- 接口: `ICGGalleryUI`
+- 功能: 查看已解锁的 CG
 
-## 7. Audio-System
+**Tips**
+- 接口: `ITipsUI`
+- 功能: 查看游戏术语解释
 
-- Haupt-AudioManager: `[Zugriff]`
-- Sound abspielen: `[Methode]`
-- Lautstärke-Einstellungen: `[Zugriff]`
-- [Relevante Sound-Events für Feedback]
+**控制面板 (Control Panel)**
+- 功能: 切换自动阅读、跳过文本等
 
----
+### 文本打印机 (Text Printers)
 
-## 8. Speichern und Laden
-
-- Speichern: `[Methode]`
-- Laden: `[Methode]`
-- Spielstand-Pfad: `[Falls bekannt]`
-- Einstellungen speichern: `[Für Mod-Einstellungen relevant]`
-
----
-
-## 9. Event-Hooks für Harmony-Patches
-
-### UI-Events (beste Patch-Punkte)
-
-**Fenster öffnen**
-- `[Klasse].[Methode]` - Wird aufgerufen wenn [Beschreibung]
-- Prefix/Postfix empfohlen: [Empfehlung]
-
-**Fenster schließen**
-- `[Klasse].[Methode]` - [Beschreibung]
-
-**Selection ändern**
-- `[Klasse].[Methode]` - Wird aufgerufen wenn Auswahl sich ändert
-
-### Gameplay-Events
-
-**Item aufnehmen**
-- `[Klasse].[Methode]`
-
-**Quest abschließen**
-- `[Klasse].[Methode]`
-
-**[Weitere relevante Events...]**
-
-### Update-Loops
-
-- `[Klasse].Update()` - [Was passiert dort, wann patchen?]
-- `[Klasse].LateUpdate()` - [Beschreibung]
+**接口:** `ITextPrinter`
+- 属性:
+  - `Text`: 当前显示的文本
+  - `AuthorName`: 说话者名称
+  - `IsPrinting`: 是否正在打印文本
+- 方法:
+  - `PrintAsync()`: 打印文本
+  - `AppendTextAsync()`: 追加文本
 
 ---
 
-## 10. Lokalisierung
+## 5. 游戏机制 - 功能目录
 
-- Übersetzungs-Methode: `[Methode zum Abrufen von übersetztem Text]`
-- Sprach-Dateien: `[Pfad/Format]`
-- Fallback-Verhalten: `[Was passiert wenn Key nicht gefunden?]`
+### 对话系统
+- 核心接口: `ITextPrinter`
+- 文本显示: 逐字打印效果
+- 说话者名称: 通过 `AuthorName` 属性
+- 文本速度: 可配置
+
+### 选项系统 (Choice Handlers)
+- 功能: 显示选项供玩家选择
+- 接口: `IChoiceHandler`
+- 选项数量: 可变
+
+### 存档系统
+- 接口: `ISaveSlotManager<GameStateMap>`
+- 存档槽: 多个存档槽
+- 快速存档: 支持
+- 自动存档: 支持
+
+### 角色系统
+- 接口: `ICharacterManager`
+- 角色显示: Live2D 或 Sprite
+- 表情变化: 支持
+
+### 背景系统
+- 接口: `IBackgroundManager`
+- 背景切换: 支持过渡效果
 
 ---
 
-## 11. Code-Beispiele
+## 6. 状态和通知
 
-### UI-Fenster prüfen
+### 游戏状态
+- 脚本播放状态: 通过 `IScriptPlayer` 获取
+- 当前播放位置: `PlaybackSpot`
 
+### 通知系统
+- UI 通知: 通过 UI 管理器
+
+---
+
+## 7. 音频系统
+
+- 音频管理器: `Engine.GetService<IAudioManager>()`
+- BGM: 背景音乐
+- SFX: 音效
+- 语音: 角色语音（ASMR）
+
+---
+
+## 8. 存档和加载
+
+- 存档方法: `ISaveSlotManager.SaveAsync(slotId, gameState)`
+- 读档方法: `ISaveSlotManager.LoadAsync(slotId)`
+- 存档位置: 游戏数据目录下的 Saves 文件夹
+- 设置存档: 独立的设置存档槽
+
+---
+
+## 9. Harmony 补丁事件钩子
+
+### UI 事件（最佳补丁点）
+
+**文本显示**
+- `ITextPrinter.PrintAsync()` - 当文本打印时
+- 建议: Postfix，用于朗读新显示的文本
+
+**菜单打开/关闭**
+- UI 面板的 `Show()` / `Hide()` 方法
+- 建议: Postfix，用于通知菜单状态变化
+
+**选项显示**
+- `IChoiceHandler` 的相关方法
+- 建议: Postfix，用于朗读选项
+
+### 输入事件
+- 输入处理的相关方法
+- 建议: Prefix，用于拦截或重定向输入
+
+### 更新循环
+- `MonoBehaviour.Update()` - 每帧更新
+- 注意: 谨慎使用，避免性能问题
+
+---
+
+## 10. 本地化
+
+- 游戏语言: 简体中文
+- Naninovel 本地化: 支持 Managed Text 功能
+- 文本管理: 通过脚本文件 (.nani)
+
+---
+
+## 11. 代码示例
+
+### 获取引擎服务
 ```csharp
-// Prüfen ob ein bestimmtes Fenster offen ist
-if ([UIManager].instance.[window].activeSelf)
+// 获取脚本播放器
+var scriptPlayer = Engine.GetService<IScriptPlayer>();
+
+// 获取 UI 管理器
+var uiManager = Engine.GetService<IUIManager>();
+
+// 获取文本打印机管理器
+var printerManager = Engine.GetService<ITextPrinterManager>();
+```
+
+### 获取当前文本
+```csharp
+var printerManager = Engine.GetService<ITextPrinterManager>();
+var defaultPrinter = printerManager.GetDefaultPrinter();
+string currentText = defaultPrinter.Text;
+string authorName = defaultPrinter.AuthorName;
+```
+
+### 检查 UI 是否打开
+```csharp
+var uiManager = Engine.GetService<IUIManager>();
+var titleUI = uiManager.GetUI<ITitleUI>();
+bool isTitleVisible = titleUI.Visible;
+```
+
+### Harmony 补丁示例
+```csharp
+[HarmonyPatch(typeof(SomeNaninovelClass), "SomeMethod")]
+class SomeMethodPatch
 {
-    // Fenster ist offen
-}
-```
-
-### Auf Spieler-Daten zugreifen
-
-```csharp
-var player = [Player].instance;
-string health = $"Gesundheit: {player.[health]}/{player.[maxHealth]}";
-```
-
-### Items im Inventar durchgehen
-
-```csharp
-foreach (var item in [Inventory].instance.[items])
-{
-    string info = $"{item.[name]}: {item.[count]}";
-}
-```
-
-### Interaktive Objekte finden
-
-```csharp
-// [Beispiel für das spezifische Spiel]
-```
-
-### Harmony-Patch Beispiel
-
-```csharp
-[HarmonyPatch(typeof([Klasse]), "[Methode]")]
-class [Name]Patch
-{
-    static void Postfix([Parameter])
+    static void Postfix()
     {
-        // Nach Original-Methode ausführen
+        // 在原始方法之后执行
+        ScreenReader.Say("文本已更新");
     }
 }
 ```
 
 ---
 
-## 12. Bekannte Probleme und Workarounds
+## 12. 已知问题和解决方案
 
-- **[Problem 1]**: [Beschreibung und Lösung]
-- **[Problem 2]**: [Beschreibung und Lösung]
-
----
-
-## 13. Noch nicht analysiert
-
-Bereiche die noch untersucht werden müssen:
-
-- [ ] [Bereich 1]
-- [ ] [Bereich 2]
-- [ ] [Bereich 3]
+- **Naninovel 版本**: 需要确认具体版本
+- **自定义代码**: 游戏自定义代码很少（Assembly-CSharp.dll 仅 62KB）
+- **Live2D**: 游戏使用 Live2D 角色，可能影响无障碍
 
 ---
 
-## Änderungshistorie
+## 13. 待分析区域
 
-- **[Datum]**: Initiale Analyse
-- **[Datum]**: [Was wurde hinzugefügt/geändert]
+需要进一步研究的内容：
+- [ ] Naninovel 具体版本号
+- [ ] 游戏自定义代码的详细分析
+- [ ] 输入系统的具体实现
+- [ ] 菜单导航的详细流程
+- [ ] 存档系统的具体结构
+- [ ] ASMR 语音的播放机制
+- [ ] Addressables 资源加载方式
+
+---
+
+## 修改历史
+- **2026-06-20**: 初始分析，基于 Naninovel 官方文档
+- **2026-06-20**: 添加游戏基本信息和引擎服务概述
