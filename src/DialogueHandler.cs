@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using Naninovel;
-using Naninovel.UI;
 
 namespace HuXiangLianPian.Accessibility
 {
@@ -14,9 +13,6 @@ namespace HuXiangLianPian.Accessibility
         #region Fields
         private ITextPrinterManager _textPrinterManager;
         private bool _subscribed = false;
-        private string _lastAnnouncedText;
-        private float _lastAnnounceTime;
-        private const float MIN_ANNOUNCE_INTERVAL = 0.1f; // 最小朗读间隔，防止刷屏
         #endregion
 
         #region Public Methods
@@ -50,7 +46,6 @@ namespace HuXiangLianPian.Accessibility
         /// </summary>
         public void AnnounceStatus()
         {
-            // TODO: 实现朗读当前对话状态的功能
             ScreenReader.Say("对话界面");
         }
         #endregion
@@ -78,36 +73,26 @@ namespace HuXiangLianPian.Accessibility
                 string announceText = string.Empty;
                 if (!string.IsNullOrEmpty(author))
                 {
-                    announceText = $"{author}：{text}";
+                    announceText = author + "：" + text;
                 }
                 else
                 {
                     announceText = text;
                 }
 
-                // 防止频繁朗读
-                if (Time.unscaledTime - _lastAnnounceTime < MIN_ANNOUNCE_INTERVAL &&
-                    announceText == _lastAnnouncedText)
-                {
-                    return;
-                }
-
-                _lastAnnouncedText = announceText;
-                _lastAnnounceTime = Time.unscaledTime;
-
                 // 朗读文本
                 ScreenReader.Say(announceText);
 
                 if (Main.DebugMode)
                 {
-                    DebugLogger.Log(LogCategory.Handler, "DialogueHandler", $"朗读对话: {announceText}");
+                    DebugLogger.Log(LogCategory.Handler, "DialogueHandler", "朗读对话: " + announceText);
                 }
             }
             catch (Exception e)
             {
                 if (Main.DebugMode)
                 {
-                    Main.Log.LogWarning($"处理文本打印事件时出错: {e.GetType().Name} - {e.Message}");
+                    Main.Log.LogWarning("处理文本打印事件时出错: " + e.GetType().Name + " - " + e.Message);
                 }
             }
         }
