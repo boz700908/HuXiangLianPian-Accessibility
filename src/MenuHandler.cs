@@ -294,12 +294,15 @@ namespace HuXiangLianPian.Accessibility
                         var btn = buttons[i];
                         string btnText = GetButtonText(btn);
                         var nav = btn.navigation;
+                        var canvasGroup = btn.GetComponentInParent<CanvasGroup>();
                         Main.Log.LogInfo($"    [{i}] {btn.gameObject.name} - 文本: {btnText} - 可交互: {btn.interactable}");
                         Main.Log.LogInfo($"        导航模式: {nav.mode}");
                         Main.Log.LogInfo($"        上: {(nav.selectOnUp != null ? nav.selectOnUp.name : "null")}");
                         Main.Log.LogInfo($"        下: {(nav.selectOnDown != null ? nav.selectOnDown.name : "null")}");
                         Main.Log.LogInfo($"        左: {(nav.selectOnLeft != null ? nav.selectOnLeft.name : "null")}");
                         Main.Log.LogInfo($"        右: {(nav.selectOnRight != null ? nav.selectOnRight.name : "null")}");
+                        Main.Log.LogInfo($"        父CanvasGroup: {(canvasGroup != null ? $"interactable={canvasGroup.interactable}, alpha={canvasGroup.alpha}" : "null")}");
+                        Main.Log.LogInfo($"        激活状态: {btn.gameObject.activeInHierarchy}");
                     }
                     Main.Log.LogInfo("");
                 }
