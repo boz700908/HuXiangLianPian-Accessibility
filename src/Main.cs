@@ -1,6 +1,7 @@
 using BepInEx;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 using System.Collections;
 using Naninovel;
 

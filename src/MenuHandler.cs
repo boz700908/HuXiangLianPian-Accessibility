@@ -49,6 +49,14 @@ namespace HuXiangLianPian.Accessibility
         {
             // 开发阶段：禁用Engine.Initialized检查，让Mod直接可用
             // if (!Engine.Initialized) return;
+
+            // 每隔几秒打一次状态日志
+            if (Time.unscaledTime - _lastLogTime > LOG_INTERVAL)
+            {
+                _lastLogTime = Time.unscaledTime;
+                Main.Log.LogInfo($"MenuHandler状态 - EventSystem: {(EventSystem.current != null ? "存在" : "不存在")}, 当前菜单: {_currentMenuType}");
+            }
+
             if (EventSystem.current == null) return;
 
             // 检测当前菜单类型
@@ -145,9 +153,14 @@ namespace HuXiangLianPian.Accessibility
                     }
                 }
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
-                // 忽略错误
+                // 开发阶段：输出异常信息，方便调试
+                if (Main.DebugMode && Time.unscaledTime - _lastLogTime > LOG_INTERVAL)
+                {
+                    _lastLogTime = Time.unscaledTime;
+                    Main.Log.LogWarning($"检测菜单时出错: {e.GetType().Name} - {e.Message}");
+                }
             }
         }
 
