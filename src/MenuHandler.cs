@@ -45,7 +45,8 @@ namespace HuXiangLianPian.Accessibility
         /// </summary>
         public void Update()
         {
-            if (!Engine.Initialized) return;
+            // 开发阶段：禁用Engine.Initialized检查，让Mod直接可用
+            // if (!Engine.Initialized) return;
             if (EventSystem.current == null) return;
 
             // 检测当前菜单类型
@@ -129,6 +130,16 @@ namespace HuXiangLianPian.Accessibility
                             ScreenReader.Say(menuName);
                             DebugLogger.Log(LogCategory.State, $"菜单打开: {menuName}");
                         }
+
+                        // 调试模式：输出菜单详细信息
+                        if (Main.DebugMode)
+                        {
+                            LogMenuDetails(newMenuType, uiManager);
+                        }
+                    }
+                    else
+                    {
+                        DebugLogger.Log(LogCategory.State, "菜单关闭");
                     }
                 }
             }

@@ -43,8 +43,9 @@ namespace HuXiangLianPian.Accessibility
         /// <summary>
         /// 调试模式 - 开启时记录所有屏幕阅读器输出和详细游戏状态。
         /// 按 F12 切换。
+        /// 开发阶段默认开启。
         /// </summary>
-        public static bool DebugMode = false;
+        public static bool DebugMode = true;
 
         /// <summary>
         /// BepInEx 日志实例，其他类可以通过 Main.Log 访问。
@@ -85,8 +86,9 @@ namespace HuXiangLianPian.Accessibility
 
         void Update()
         {
-            // 等待游戏准备就绪
-            if (!CheckGameReady()) return;
+            // 开发阶段：禁用游戏就绪检测，让Mod直接可用
+            // 后续稳定后再恢复检测
+            // if (!CheckGameReady()) return;
 
             // 先处理全局快捷键
             if (ProcessHotkeys()) return;
