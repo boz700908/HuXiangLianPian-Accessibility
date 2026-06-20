@@ -28,3 +28,4 @@ age-of-decadence-analyse.txt
 nul
 *.zip
 Directory.Build.props
+dist/
