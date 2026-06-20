@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using System.Collections;
 using Naninovel;
+using Naninovel.UI;
 
 // ============================================================================
 // 重要：游戏代码访问
@@ -59,10 +60,12 @@ namespace HuXiangLianPian.Accessibility
 
         // 处理器 - 每个功能/界面一个
         private MenuHandler _menuHandler;
+        private DialogueHandler _dialogueHandler;
         // private DialogHandler _dialogHandler;
         // private SettingsHandler _settingsHandler;
 
         private bool _menuHandlerErrorLogged = false;
+        private bool _dialogueHandlerInitialized = false;
         #endregion
 
         #region Lifecycle
@@ -115,7 +118,7 @@ namespace HuXiangLianPian.Accessibility
         {
             // 在这里创建处理器实例
             _menuHandler = new MenuHandler();
-            // _dialogHandler = new DialogHandler();
+            _dialogueHandler = new DialogueHandler();
         }
 
         private IEnumerator AnnounceStartupDelayed()
@@ -200,6 +203,12 @@ namespace HuXiangLianPian.Accessibility
         {
             // 在这里初始化需要游戏API的处理器
             // 比如订阅Naninovel事件
+            if (_dialogueHandler != null && !_dialogueHandlerInitialized)
+            {
+                _dialogueHandler.Initialize();
+                _dialogueHandlerInitialized = true;
+                Log.LogInfo("对话处理器已初始化");
+            }
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -233,30 +242,37 @@ namespace HuXiangLianPian.Accessibility
                 return true;
             }
 
-            // F1 = 帮助（总是在 Main 中处理）
+            // F1 = 快速存档
             if (Input.GetKeyDown(KeyCode.F1))
             {
-                DebugLogger.LogInput("F1", "帮助");
-                AnnounceHelp();
+                DebugLogger.LogInput("F1", "快速存档");
+                QuickSave();
                 return true;
             }
 
-            // 其他 F 键分发到处理器：
-            // if (Input.GetKeyDown(KeyCode.F2))
-            // {
-            //     DebugLogger.LogInput("F2", "对话状态");
-            //     _dialogHandler.AnnounceStatus();
-            //     return true;
-            // }
+            // F2 = 快速读档
+            if (Input.GetKeyDown(KeyCode.F2))
+            {
+                DebugLogger.LogInput("F2", "快速读档");
+                QuickLoad();
+                return true;
+            }
 
-            // Tab = 导航
-            // if (Input.GetKeyDown(KeyCode.Tab))
-            // {
-            //     int direction = Input.GetKey(KeyCode.LeftShift) ? -1 : 1;
-            //     DebugLogger.LogInput(direction > 0 ? "Tab" : "Shift+Tab", "导航");
-            //     _buttonNavigator.Navigate(direction);
-            //     return true;
-            // }
+            // F3 = 打开存档菜单
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                DebugLogger.LogInput("F3", "打开存档菜单");
+                OpenSaveMenu();
+                return true;
+            }
+
+            // F4 = 打开读档菜单
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                DebugLogger.LogInput("F4", "打开读档菜单");
+                OpenLoadMenu();
+                return true;
+            }
 
             return false;
         }
@@ -265,6 +281,25 @@ namespace HuXiangLianPian.Accessibility
         #region Handler Updates
         private void UpdateHandlers()
         {
+            // 开发阶段：尝试初始化对话处理器（因为禁用了游戏就绪检测）
+            if (_dialogueHandler != null && !_dialogueHandlerInitialized)
+            {
+                try
+                {
+                    // 检查引擎是否已初始化
+                    if (Engine.Initialized)
+                    {
+                        _dialogueHandler.Initialize();
+                        _dialogueHandlerInitialized = true;
+                        Log.LogInfo("对话处理器已初始化（开发阶段自动初始化）");
+                    }
+                }
+                catch (System.Exception)
+                {
+                    // 引擎还没准备好，忽略异常
+                }
+            }
+
             // 对需要每帧检查的处理器调用 Update()
             try
             {
@@ -281,6 +316,146 @@ namespace HuXiangLianPian.Accessibility
                 }
             }
             // _dialogHandler.Update();
+        }
+        #endregion
+
+        #region SaveLoad
+        /// <summary>
+        /// 快速存档。
+        /// </summary>
+        private void QuickSave()
+        {
+            try
+            {
+                var stateManager = Engine.GetService<IStateManager>();
+                if (stateManager != null)
+                {
+                    // 快速存档是异步方法，这里直接调用，不等待结果
+                    var task = stateManager.QuickSave();
+                    ScreenReader.Say("正在快速存档");
+                    Log.LogInfo("快速存档已触发");
+                }
+                else
+                {
+                    ScreenReader.Say("存档功能不可用");
+                    Log.LogWarning("无法获取IStateManager服务");
+                }
+            }
+            catch (System.Exception e)
+            {
+                ScreenReader.Say("快速存档失败");
+                Log.LogWarning($"快速存档时出错: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 快速读档。
+        /// </summary>
+        private void QuickLoad()
+        {
+            try
+            {
+                var stateManager = Engine.GetService<IStateManager>();
+                if (stateManager != null)
+                {
+                    if (stateManager.QuickLoadAvailable)
+                    {
+                        // 快速读档是异步方法，这里直接调用，不等待结果
+                        var task = stateManager.QuickLoad();
+                        ScreenReader.Say("正在快速读档");
+                        Log.LogInfo("快速读档已触发");
+                    }
+                    else
+                    {
+                        ScreenReader.Say("没有可用的快速存档");
+                        Log.LogInfo("快速读档不可用，没有存档");
+                    }
+                }
+                else
+                {
+                    ScreenReader.Say("读档功能不可用");
+                    Log.LogWarning("无法获取IStateManager服务");
+                }
+            }
+            catch (System.Exception e)
+            {
+                ScreenReader.Say("快速读档失败");
+                Log.LogWarning($"快速读档时出错: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 打开存档菜单。
+        /// </summary>
+        private void OpenSaveMenu()
+        {
+            try
+            {
+                var uiManager = Engine.GetService<IUIManager>();
+                if (uiManager != null)
+                {
+                    var saveLoadUI = uiManager.GetUI<ISaveLoadUI>();
+                    if (saveLoadUI != null)
+                    {
+                        saveLoadUI.Visible = true;
+                        // TODO: 切换到存档面板
+                        ScreenReader.Say("打开存档菜单");
+                        Log.LogInfo("已打开存档菜单");
+                    }
+                    else
+                    {
+                        ScreenReader.Say("存档菜单不可用");
+                        Log.LogWarning("无法获取ISaveLoadUI");
+                    }
+                }
+                else
+                {
+                    ScreenReader.Say("UI功能不可用");
+                    Log.LogWarning("无法获取IUIManager服务");
+                }
+            }
+            catch (System.Exception e)
+            {
+                ScreenReader.Say("打开存档菜单失败");
+                Log.LogWarning($"打开存档菜单时出错: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 打开读档菜单。
+        /// </summary>
+        private void OpenLoadMenu()
+        {
+            try
+            {
+                var uiManager = Engine.GetService<IUIManager>();
+                if (uiManager != null)
+                {
+                    var saveLoadUI = uiManager.GetUI<ISaveLoadUI>();
+                    if (saveLoadUI != null)
+                    {
+                        saveLoadUI.Visible = true;
+                        // TODO: 切换到读档面板
+                        ScreenReader.Say("打开读档菜单");
+                        Log.LogInfo("已打开读档菜单");
+                    }
+                    else
+                    {
+                        ScreenReader.Say("读档菜单不可用");
+                        Log.LogWarning("无法获取ISaveLoadUI");
+                    }
+                }
+                else
+                {
+                    ScreenReader.Say("UI功能不可用");
+                    Log.LogWarning("无法获取IUIManager服务");
+                }
+            }
+            catch (System.Exception e)
+            {
+                ScreenReader.Say("打开读档菜单失败");
+                Log.LogWarning($"打开读档菜单时出错: {e.Message}");
+            }
         }
         #endregion
 

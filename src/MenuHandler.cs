@@ -26,6 +26,51 @@ namespace HuXiangLianPian.Accessibility
         // 当前打开的菜单类型
         private MenuType _currentMenuType = MenuType.None;
         private MenuType _lastMenuType = MenuType.None;
+
+        // 硬编码的按钮文本映射（图片按钮无法动态获取文本）
+        private static readonly System.Collections.Generic.Dictionary<string, string> _buttonTextMap = new System.Collections.Generic.Dictionary<string, string>
+        {
+            // 标题菜单
+            { "NewGameButton", "开始游戏" },
+            { "ContinueButton", "读取进度" },
+            { "SettingsButton", "环境设定" },
+            { "CGGalleryButton", "CG画廊" },
+            { "ExitButton", "离开游戏" },
+            
+            // 设置菜单 - 按钮
+            { "ReturnButton", "关闭" },
+            { "ReturnTitleButton", "回到标题画面" },
+            
+            // 设置菜单 - 标签
+            { "SettingToggle", "设置标签" },
+            { "SoundToggle", "声音标签" },
+            
+            // 设置菜单 - 画面设置
+            { "FullToggle", "全屏模式" },
+            { "WindowToggle", "窗口模式" },
+            
+            // 设置菜单 - 分辨率
+            { "Res1440Toggle", "2560*1440" },
+            { "Res1080Toggle", "1920*1080" },
+            
+            // 设置菜单 - 跳过设置
+            { "SkipAllToggle", "允许跳过未读部分，是" },
+            { "ReadOnlyToggle", "允许跳过未读部分，否" },
+        };
+        
+        // 硬编码的滑块文本映射
+        private static readonly System.Collections.Generic.Dictionary<string, string> _sliderTextMap = new System.Collections.Generic.Dictionary<string, string>
+        {
+            // 设置菜单 - 文字设置
+            { "MessageSpeed", "文字显示速度" },
+            { "AutoDelay", "自动模式文字速度" },
+            
+            // 设置菜单 - 声音设置
+            { "Master", "全体音量" },
+            { "Music", "音乐音量" },
+            { "Voice", "角色语音" },
+            { "SE", "SE音量" },
+        };
         #endregion
 
         #region Enums
@@ -488,6 +533,13 @@ namespace HuXiangLianPian.Accessibility
                 return GetToggleText(toggle);
             }
 
+            // 检查是否是Slider
+            var slider = selected.GetComponent<Slider>();
+            if (slider != null)
+            {
+                return GetSliderText(slider);
+            }
+
             // 检查是否是Button
             var button = selected.GetComponent<Button>();
             if (button != null)
@@ -570,9 +622,21 @@ namespace HuXiangLianPian.Accessibility
         {
             if (toggle == null) return string.Empty;
 
-            // 获取开关的文本
-            var text = toggle.GetComponentInChildren<TMP_Text>();
-            string label = text != null ? text.text : toggle.name;
+            // 先检查硬编码的映射（图片按钮无法动态获取文本）
+            string label = toggle.name;
+            if (_buttonTextMap.TryGetValue(toggle.name, out string hardcodedText))
+            {
+                label = hardcodedText;
+            }
+            else
+            {
+                // 获取开关的文本
+                var text = toggle.GetComponentInChildren<TMP_Text>();
+                if (text != null && !string.IsNullOrEmpty(text.text))
+                {
+                    label = text.text;
+                }
+            }
 
             // 获取开关状态
             bool isOn = toggle.UIComponent != null && toggle.UIComponent.isOn;
@@ -588,9 +652,21 @@ namespace HuXiangLianPian.Accessibility
         {
             if (toggle == null) return string.Empty;
 
-            // 获取开关的文本
-            var text = toggle.GetComponentInChildren<TMP_Text>();
-            string label = text != null ? text.text : toggle.name;
+            // 先检查硬编码的映射（图片按钮无法动态获取文本）
+            string label = toggle.name;
+            if (_buttonTextMap.TryGetValue(toggle.name, out string hardcodedText))
+            {
+                label = hardcodedText;
+            }
+            else
+            {
+                // 获取开关的文本
+                var text = toggle.GetComponentInChildren<TMP_Text>();
+                if (text != null && !string.IsNullOrEmpty(text.text))
+                {
+                    label = text.text;
+                }
+            }
 
             // 获取开关状态
             string status = toggle.isOn ? "开启" : "关闭";
@@ -599,11 +675,50 @@ namespace HuXiangLianPian.Accessibility
         }
 
         /// <summary>
+        /// 获取Slider的文本。
+        /// </summary>
+        private string GetSliderText(Slider slider)
+        {
+            if (slider == null) return string.Empty;
+
+            // 先检查硬编码的映射
+            string label = slider.name;
+            if (_sliderTextMap.TryGetValue(slider.name, out string hardcodedText))
+            {
+                label = hardcodedText;
+            }
+            else
+            {
+                // 获取滑块的文本
+                var text = slider.GetComponentInChildren<TMP_Text>();
+                if (text != null && !string.IsNullOrEmpty(text.text))
+                {
+                    label = text.text;
+                }
+            }
+
+            // 获取滑块当前值（百分比）
+            float valuePercent = 0f;
+            if (slider.maxValue > slider.minValue)
+            {
+                valuePercent = (slider.value - slider.minValue) / (slider.maxValue - slider.minValue) * 100f;
+            }
+
+            return $"{label}，{Mathf.RoundToInt(valuePercent)}%";
+        }
+
+        /// <summary>
         /// 获取按钮的文本。
         /// </summary>
         private string GetButtonText(Button button)
         {
             if (button == null) return string.Empty;
+
+            // 先检查硬编码的映射（图片按钮无法动态获取文本）
+            if (_buttonTextMap.TryGetValue(button.name, out string hardcodedText))
+            {
+                return hardcodedText;
+            }
 
             // 先检查是否是LabeledButton（Naninovel自定义按钮）
             var labeledButton = button as LabeledButton;
