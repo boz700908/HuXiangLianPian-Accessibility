@@ -293,7 +293,13 @@ namespace HuXiangLianPian.Accessibility
                     {
                         var btn = buttons[i];
                         string btnText = GetButtonText(btn);
+                        var nav = btn.navigation;
                         Main.Log.LogInfo($"    [{i}] {btn.gameObject.name} - 文本: {btnText} - 可交互: {btn.interactable}");
+                        Main.Log.LogInfo($"        导航模式: {nav.mode}");
+                        Main.Log.LogInfo($"        上: {(nav.selectOnUp != null ? nav.selectOnUp.name : "null")}");
+                        Main.Log.LogInfo($"        下: {(nav.selectOnDown != null ? nav.selectOnDown.name : "null")}");
+                        Main.Log.LogInfo($"        左: {(nav.selectOnLeft != null ? nav.selectOnLeft.name : "null")}");
+                        Main.Log.LogInfo($"        右: {(nav.selectOnRight != null ? nav.selectOnRight.name : "null")}");
                     }
                     Main.Log.LogInfo("");
                 }
@@ -510,6 +516,13 @@ namespace HuXiangLianPian.Accessibility
         {
             if (button == null) return string.Empty;
 
+            // 先检查是否是LabeledButton（Naninovel自定义按钮）
+            var labeledButton = button as LabeledButton;
+            if (labeledButton != null)
+            {
+                return GetLabeledButtonText(labeledButton);
+            }
+
             // 获取按钮上的文本
             var tmpText = button.GetComponentInChildren<TMP_Text>();
             if (tmpText != null && !string.IsNullOrEmpty(tmpText.text))
@@ -525,6 +538,115 @@ namespace HuXiangLianPian.Accessibility
 
             // 返回按钮名称
             return button.name;
+        }
+
+        /// <summary>
+        /// 获取LabeledButton的文本。
+        /// 使用反射尝试获取Label或Text属性。
+        /// </summary>
+        private string GetLabeledButtonText(LabeledButton labeledButton)
+        {
+            if (labeledButton == null) return string.Empty;
+
+            try
+            {
+                // 尝试获取Label属性（Naninovel中常见的命名）
+                var labelProperty = labeledButton.GetType().GetProperty("Label",
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.IgnoreCase);
+
+                if (labelProperty != null)
+                {
+                    var labelValue = labelProperty.GetValue(labeledButton);
+                    if (labelValue != null)
+                    {
+                        // 如果是LocalizableText类型，转换为string
+                        if (labelValue is LocalizableText localizableText)
+                        {
+                            return localizableText.ToString();
+                        }
+                        return labelValue.ToString();
+                    }
+                }
+
+                // 尝试获取Text属性
+                var textProperty = labeledButton.GetType().GetProperty("Text",
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.IgnoreCase);
+
+                if (textProperty != null)
+                {
+                    var textValue = textProperty.GetValue(labeledButton);
+                    if (textValue != null)
+                    {
+                        return textValue.ToString();
+                    }
+                }
+
+                // 尝试获取LabelText字段或属性
+                var labelTextProperty = labeledButton.GetType().GetProperty("LabelText",
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.IgnoreCase);
+
+                if (labelTextProperty != null)
+                {
+                    var labelTextValue = labelTextProperty.GetValue(labeledButton);
+                    if (labelTextValue != null)
+                    {
+                        return labelTextValue.ToString();
+                    }
+                }
+
+                // 调试模式：列出所有公开属性，方便后续完善
+                if (Main.DebugMode)
+                {
+                    var allProperties = labeledButton.GetType().GetProperties(
+                        System.Reflection.BindingFlags.Public |
+                        System.Reflection.BindingFlags.Instance);
+
+                    Main.Log.LogInfo($"LabeledButton公开属性列表 ({labeledButton.name}):");
+                    foreach (var prop in allProperties)
+                    {
+                        try
+                        {
+                            var value = prop.GetValue(labeledButton);
+                            string valueStr = value != null ? value.ToString() : "null";
+                            if (valueStr.Length > 50) valueStr = valueStr.Substring(0, 50) + "...";
+                            Main.Log.LogInfo($"  {prop.Name} ({prop.PropertyType.Name}): {valueStr}");
+                        }
+                        catch
+                        {
+                            Main.Log.LogInfo($"  {prop.Name} ({prop.PropertyType.Name}): <无法读取>");
+                        }
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"获取LabeledButton文本时出错: {e.Message}");
+                }
+            }
+
+            // 最后尝试获取子组件中的文本
+            var tmpText = labeledButton.GetComponentInChildren<TMP_Text>();
+            if (tmpText != null && !string.IsNullOrEmpty(tmpText.text))
+            {
+                return tmpText.text;
+            }
+
+            var text = labeledButton.GetComponentInChildren<Text>();
+            if (text != null && !string.IsNullOrEmpty(text.text))
+            {
+                return text.text;
+            }
+
+            // 返回按钮名称
+            return labeledButton.name;
         }
         #endregion
 

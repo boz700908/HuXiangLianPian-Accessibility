@@ -123,9 +123,8 @@ namespace HuXiangLianPian.Accessibility
             Log.LogInfo("启动语音协程开始");
             // 短暂延迟，确保屏幕阅读器准备就绪
             yield return new WaitForSeconds(1f);
-            // 暂时注释掉，先确认Mod基本生命周期正常
-            // ScreenReader.Say(Loc.Get("mod_loaded"));
-            Log.LogInfo("启动语音协程完成（语音已暂时禁用）");
+            ScreenReader.Say(Loc.Get("mod_loaded"));
+            Log.LogInfo("启动语音已播放");
         }
 
         void Update()
