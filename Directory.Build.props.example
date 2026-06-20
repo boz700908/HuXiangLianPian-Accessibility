@@ -8,8 +8,8 @@
     <GameDir>C:\Program Files (x86)\Steam\steamapps\common\狐想恋翩-梦妹以求- Demo</GameDir>
     <!-- 游戏名称（用于 _Data 目录） -->
     <GameName>HuXiangLianPian</GameName>
-    <!-- MelonLoader 运行时目录 (net35 或 net6) -->
-    <MelonLoaderRuntime>net35</MelonLoaderRuntime>
+    <!-- MelonLoader 运行时目录 (net35, net472 或 net6) -->
+    <MelonLoaderRuntime>net472</MelonLoaderRuntime>
     <!-- 目标框架 -->
     <TargetFramework>net472</TargetFramework>
   </PropertyGroup>
