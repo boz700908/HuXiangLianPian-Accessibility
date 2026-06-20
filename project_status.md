@@ -24,13 +24,14 @@
 - [x] 游戏分析（引擎、架构、运行时）
 - [x] Mod加载器选择（MelonLoader）
 - [x] Tolk屏幕阅读器集成（从boz700908/tolk仓库下载）
-- [x] .NET SDK 配置（.NET 8.0.422）
+- [x] .NET SDK 配置（.NET 8.0.422 + .NET Core 3.1.32）
 - [x] GitHub 仓库创建
 - [x] 项目结构搭建
 - [x] MelonLoader 安装（v0.7.3 x64）
-- [x] 反编译游戏代码（反射分析结构，69个自定义类型）
+- [x] 反编译游戏代码（dotnet-ildasm，31个自定义类）
 - [x] 首次编译测试（0警告0错误）
 - [x] 游戏API文档（docs/game-api.md）
+- [x] Naninovel版本确认（Naninovel.Common 2025.3.1546.19）
 
 ### Phase 1: 代码分析
 - [ ] Tier 1: 结构概览
@@ -77,18 +78,53 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - **角色动画**: Live2D
 
 ### 自定义代码分析
-- **Assembly-CSharp.dll**: 62KB，69个类型
+- **Assembly-CSharp.dll**: 62KB，31个自定义类
 - **主要命名空间**:
   - (global): 基础UI控件
   - Huxiang.Naninovel: 游戏自定义Naninovel扩展
   - NananaGames.NaniExt.UI: Naninovel UI扩展
   - NananaGames.UI: UI相关
-- **关键类**:
-  - ScriptableButton / ScriptableToggle: UI控件基类
-  - SaveLoadMenu: 存档读档菜单
-  - SettingsUI: 设置菜单
-  - ControlPanel*: 控制面板（自动播放、跳过、存档读档）
-  - ScrollWheelBacklog: 滚轮回溯功能
+- **完整自定义类列表**:
+  - **基础UI控件**:
+    - ControlPanelSettingsButton: 控制面板设置按钮
+    - ScriptableToggle: 可脚本化开关基类
+    - RightClickButtonTrigger: 右键按钮触发器
+    - ScrollWheelBacklog: 滚轮历史记录
+    - GameSystemQuitButton: 游戏退出按钮
+    - GameSystemTitleButton: 返回标题按钮
+    - TitleSettingsButton: 标题设置按钮
+  - **设置相关**:
+    - SettingsUI: 设置菜单（继承GameSettingsMenu，含BackUIType属性）
+    - GameSettingsResolutionToggle: 分辨率开关
+    - GameSettingsScreenModeToggle: 屏幕模式开关
+    - GameSettingsVoiceInterruptToggle: 语音中断开关
+    - GameSettingsSkipModeToggle: 跳过模式开关
+    - GameSettingsReturnButton: 设置返回按钮
+  - **存档读档相关**:
+    - NananaGames.UI.SaveLoadMenu: 存档读档菜单（实现ISaveLoadUI接口）
+    - NananaGames.UI.SaveLoadSlot: 存档槽
+    - NananaGames.UI.SaveLoadSlotsGrid: 存档槽网格
+    - NananaGames.UI.SaveLoadGridPageToggle: 存档分页开关
+    - NananaGames.UI.SaveLoadSwitchPanelButton: 切换保存/加载面板按钮
+    - NananaGames.UI.SaveLoadMenuQuitButton: 存档菜单退出按钮
+    - NananaGames.UI.SaveLoadMenuReturnButton: 存档菜单返回按钮
+    - NananaGames.UI.SaveLoadMenuReturnTitleButton: 存档菜单返回标题按钮
+  - **控制面板相关**:
+    - NananaGames.UI.ControlPanelAutoPlayToggle: 自动播放开关
+    - NananaGames.UI.ControlPanelSaveLoadButton: 存档读档按钮
+    - NananaGames.UI.ControlPanelSkipToggle: 跳过开关
+  - **其他**:
+    - Huxiang.Naninovel.AutoCharacterAuthorImage: 自动角色作者图像
+    - Huxiang.Naninovel.CharacterAvatarsConfiguration: 角色头像配置
+    - NananaGames.UI.ScriptableToggle: 可脚本化开关
+    - NananaGames.UI.SplashSequence: 启动画面序列
+    - NananaGames.UI.TitleCGGalleryButton: 标题CG画廊按钮
+    - NananaGames.NaniExt.UI.ButtonSfx: 按钮音效
+- **关键发现**:
+  - 游戏自定义代码很少，主要功能由Naninovel引擎提供
+  - 存档读档菜单是自定义的（NananaGames.UI.SaveLoadMenu）
+  - 设置菜单是自定义的（SettingsUI），添加了BackUIType属性
+  - 使用了NananaGames的UI框架和Huxiang的扩展
 
 ### Naninovel核心API
 - **Engine**: 引擎核心，通过 `Engine.GetService<T>()` 获取服务

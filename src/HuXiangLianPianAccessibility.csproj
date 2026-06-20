@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Unity Mono 游戏使用 net472 -->
-    <TargetFramework>net472</TargetFramework>
+    <!-- 目标框架从 Directory.Build.props 读取 -->
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -18,11 +17,11 @@
   <!-- MelonLoader 引用 -->
   <ItemGroup>
     <Reference Include="MelonLoader">
-      <HintPath>$(GameDir)\MelonLoader\net472\MelonLoader.dll</HintPath>
+      <HintPath>$(GameDir)\MelonLoader\$(MelonLoaderRuntime)\MelonLoader.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>$(GameDir)\MelonLoader\net472\0Harmony.dll</HintPath>
+      <HintPath>$(GameDir)\MelonLoader\$(MelonLoaderRuntime)\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
