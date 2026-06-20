@@ -15,21 +15,24 @@
 - **Mod名称**: HuXiangLianPianAccessibility
 - **命名空间**: HuXiangLianPian.Accessibility
 - **作者**: boz700908
-- **Mod加载器**: MelonLoader
+- **Mod加载器**: BepInEx 5.4.22.0 (x64)
 - **目标框架**: net472
+- **配置系统**: BepInEx ConfigFile
 
 ## 开发进度
 
 ### Phase 0: 项目设置
 - [x] 游戏分析（引擎、架构、运行时）
-- [x] Mod加载器选择（MelonLoader）
+- [x] Mod加载器选择（最初选择MelonLoader，后因中文目录问题切换到BepInEx）
 - [x] Tolk屏幕阅读器集成（从boz700908/tolk仓库下载）
-- [x] .NET SDK 配置（.NET 8.0.422 + .NET 6.0.36运行时）
+- [x] .NET SDK 配置
 - [x] GitHub 仓库创建
 - [x] 项目结构搭建
-- [x] MelonLoader 安装（v0.7.3 x64）
+- [x] MelonLoader 安装（v0.7.3 x64，已弃用）
+- [x] BepInEx 安装（v5.4.22.0 x64，当前使用）
 - [x] 反编译工具安装（ilspycmd 8.2.0.7535）
-- [x] 首次编译测试（0警告0错误）
+- [x] 首次编译测试（MelonLoader版本，0警告0错误，已弃用）
+- [x] BepInEx版本编译测试（0警告0错误）
 - [x] 游戏API文档（docs/game-api.md）
 - [x] Naninovel版本确认（Naninovel.Common 2025.3.1546.19）
 - [x] dist分发目录（完整运行时文件，已提交到Git）
@@ -57,9 +60,10 @@
 - [x] 菜单打开/关闭检测（自动朗读菜单标题）
 - [x] 存档槽位特殊适配（读取槽位编号、日期、文本）
 - [x] 设置项特殊适配（读取开关标签和状态）
+- [x] 从MelonLoader迁移到BepInEx（因中文目录问题）
+- [x] 配置系统完整实现（Verbosity、AnnounceEmptyStates，支持Ctrl+F11设置菜单）
 - [ ] 对话文本朗读
 - [ ] 全局快捷键
-- [ ] 设置菜单完整支持
 - [ ] 存档/读档完整支持
 
 ### Phase 3: 功能完善
@@ -70,7 +74,7 @@
 
 ## 技术栈
 - **语言**: C#
-- **Mod框架**: MelonLoader + Harmony
+- **Mod框架**: BepInEx 5.4.22.0 + Harmony
 - **屏幕阅读器**: Tolk
 - **游戏引擎**: Unity + Naninovel
 - **反编译工具**: ilspycmd 8.2.0.7535
@@ -82,6 +86,19 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - Linux 工作区编译测试
 - Windows 真机测试
 - GitHub 代码同步
+
+## 重要变更记录
+### 2026-06-21: 从MelonLoader切换到BepInEx
+- **原因**: 游戏目录是中文的（"狐想恋翩-梦妹以求- Demo"），MelonLoader处理中文目录会乱码，导致Mod无法正常加载
+- **切换内容**:
+  - 项目文件从MelonLoader引用改为BepInEx引用
+  - Main.cs从MelonMod改为BaseUnityPlugin
+  - 日志系统从MelonLogger改为BepInEx的ManualLogSource
+  - 配置系统从MelonPreferences改为BepInEx ConfigFile
+  - 编译输出从Mods/目录改为BepInEx/plugins/目录
+  - dist目录更新为BepInEx版本
+  - INSTALL.md更新为BepInEx版本
+- **BepInEx版本**: 5.4.22.0 x64
 
 ## 技术分析总结
 
@@ -167,11 +184,15 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 3. **UI接口完整**：24个标准UI接口，可通过 `IUIManager.GetUI<T>()` 获取
 4. **自定义代码少**：游戏自定义代码很少，主要功能由Naninovel引擎提供，Mod开发主要针对Naninovel标准API
 5. **LocalizableText友好**：支持隐式转换为string，处理文本非常方便
+6. **中文目录支持**：必须使用BepInEx，MelonLoader不支持中文目录会乱码
 
 ### 配置管理
-- 使用 MelonPreferences 进行配置管理
-- 配置文件自动保存到 UserData/[ModName].cfg
-- 支持游戏内设置菜单（Ctrl+F11打开）
+- 使用 BepInEx ConfigFile 进行配置管理
+- 配置文件自动保存到 BepInEx/config/com.boz700908.HuXiangLianPianAccessibility.cfg
+- 已实现的配置项：
+  - Verbosity（详细程度）：0=最小, 1=正常, 2=详细
+  - AnnounceEmptyStates（播报空状态）：是否播报空列表/空库存等
+- 支持游戏内设置菜单（Ctrl+F11打开，方向键导航，左右键修改值）
 - 所有设置可配置，不硬编码
 
 ### 路径配置

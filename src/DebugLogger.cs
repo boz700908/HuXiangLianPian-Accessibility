@@ -1,4 +1,4 @@
-using MelonLoader;
+using BepInEx.Logging;
 
 namespace HuXiangLianPian.Accessibility
 {
@@ -31,7 +31,7 @@ namespace HuXiangLianPian.Accessibility
             if (!Main.DebugMode) return;
 
             string prefix = GetPrefix(category);
-            MelonLogger.Msg($"{prefix} {message}");
+            Main.Log.LogInfo($"{prefix} {message}");
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace HuXiangLianPian.Accessibility
             if (!Main.DebugMode) return;
 
             string prefix = GetPrefix(category);
-            MelonLogger.Msg($"{prefix} [{source}] {message}");
+            Main.Log.LogInfo($"{prefix} [{source}] {message}");
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace HuXiangLianPian.Accessibility
         {
             if (!Main.DebugMode) return;
 
-            MelonLogger.Msg($"[SR] {text}");
+            Main.Log.LogInfo($"[SR] {text}");
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace HuXiangLianPian.Accessibility
             string msg = action != null
                 ? $"{keyName} -> {action}"
                 : keyName;
-            MelonLogger.Msg($"[INPUT] {msg}");
+            Main.Log.LogInfo($"[INPUT] {msg}");
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace HuXiangLianPian.Accessibility
         {
             if (!Main.DebugMode) return;
 
-            MelonLogger.Msg($"[STATE] {description}");
+            Main.Log.LogInfo($"[STATE] {description}");
         }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace HuXiangLianPian.Accessibility
         {
             if (!Main.DebugMode) return;
 
-            MelonLogger.Msg($"[GAME] {name} = {value}");
+            Main.Log.LogInfo($"[GAME] {name} = {value}");
         }
 
         private static string GetPrefix(LogCategory category)

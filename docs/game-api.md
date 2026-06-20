@@ -679,6 +679,9 @@ submitSampler.OnStart += () =>
 ---
 
 ## 修改历史
+- **2026-06-21**: Mod框架从MelonLoader切换到BepInEx（因中文目录问题）
+  - 游戏API本身不受影响，文档内容仍然适用
+  - Mod加载方式从MelonLoader的Mods/目录改为BepInEx的plugins/目录
 - **2026-06-20**: 初始分析，基于 Naninovel 官方文档
 - **2026-06-20**: 通过反编译获得详细API信息，全面更新文档
   - 添加了所有核心接口的详细方法和属性

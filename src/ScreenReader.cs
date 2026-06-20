@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using MelonLoader;
 
 namespace HuXiangLianPian.Accessibility
 {
@@ -18,7 +17,6 @@ namespace HuXiangLianPian.Accessibility
     public static class ScreenReader
     {
         #region Native Imports
-
         [DllImport("Tolk.dll")]
         private static extern void Tolk_Load();
 
@@ -39,18 +37,14 @@ namespace HuXiangLianPian.Accessibility
 
         [DllImport("Tolk.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr Tolk_DetectScreenReader();
-
         #endregion
 
         #region Fields
-
         private static bool _available = false;
         private static bool _initialized = false;
-
         #endregion
 
         #region Public Methods
-
         /// <summary>
         /// Initializes Tolk. Call once at mod startup.
         /// </summary>
@@ -69,21 +63,21 @@ namespace HuXiangLianPian.Accessibility
                     string srName = srNamePtr != IntPtr.Zero
                         ? Marshal.PtrToStringUni(srNamePtr)
                         : "Unknown";
-                    MelonLogger.Msg($"Screenreader detected: {srName}");
+                    Main.Log.LogInfo($"Screenreader detected: {srName}");
                 }
                 else
                 {
-                    MelonLogger.Warning("No screenreader detected or Tolk not available");
+                    Main.Log.LogWarning("No screenreader detected or Tolk not available");
                 }
             }
             catch (DllNotFoundException)
             {
-                MelonLogger.Error("Tolk.dll not found! Place BOTH Tolk.dll AND nvdaControllerClient64.dll (or 32-bit version) in the game folder.");
+                Main.Log.LogError("Tolk.dll not found! Place BOTH Tolk.dll AND nvdaControllerClient64.dll (or 32-bit version) in the game folder.");
                 _available = false;
             }
             catch (Exception ex)
             {
-                MelonLogger.Error($"Failed to initialize Tolk: {ex.Message}");
+                Main.Log.LogError($"Failed to initialize Tolk: {ex.Message}");
                 _available = false;
             }
 
@@ -111,7 +105,7 @@ namespace HuXiangLianPian.Accessibility
             }
             catch (Exception ex)
             {
-                MelonLogger.Warning($"ScreenReader.Say failed: {ex.Message}");
+                Main.Log.LogWarning($"ScreenReader.Say failed: {ex.Message}");
             }
         }
 
@@ -161,7 +155,6 @@ namespace HuXiangLianPian.Accessibility
         /// Returns true if a screenreader is available.
         /// </summary>
         public static bool IsAvailable => _available;
-
         #endregion
     }
 }

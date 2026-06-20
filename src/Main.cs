@@ -1,5 +1,6 @@
-using MelonLoader;
+using BepInEx;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections;
 using Naninovel;
 
@@ -8,18 +9,15 @@ using Naninovel;
 // ============================================================================
 // 在游戏完全加载之前访问任何游戏类都会导致崩溃！
 //
-// 禁止在 OnInitializeMelon() 或更早的时候：
+// 禁止在 Awake() 或更早的时候：
 //   - 访问游戏管理器单例（GameManager.i, AudioManager.instance 等）
 //   - 在 Harmony 特性中使用 typeof(游戏类)
 //
-// 只有在 OnSceneWasLoaded() 之后或 CheckGameReady() 返回 true 时才允许。
+// 只有在 OnSceneLoaded() 之后或 CheckGameReady() 返回 true 时才允许。
 //
 // 如果遇到崩溃或静默失败：
 //   参见 docs/technical-reference.md 中的 "重要：游戏代码访问" 部分
 // ============================================================================
-
-[assembly: MelonInfo(typeof(HuXiangLianPian.Accessibility.Main), "HuXiangLianPianAccessibility", "1.0.0", "boz700908")]
-[assembly: MelonGame("StationWorks", "HuXiangLianPian")]
 
 namespace HuXiangLianPian.Accessibility
 {
@@ -27,14 +25,15 @@ namespace HuXiangLianPian.Accessibility
     /// Mod 主入口点。协调所有处理器并处理全局快捷键。
     ///
     /// 最佳实践：保持这个类精简！
-    /// - 只包含生命周期方法（OnInitializeMelon, OnUpdate, OnApplicationQuit）
+    /// - 只包含生命周期方法（Awake, Update, OnDestroy）
     /// - 只包含全局快捷键分发（F1-F12, Tab, Enter）
     /// - 只包含处理器实例化和更新调用
     ///
     /// 把所有功能逻辑放在单独的 Handler 类中。
     /// 这样代码更容易维护和测试。
     /// </summary>
-    public class Main : MelonMod
+    [BepInPlugin("com.boz700908.HuXiangLianPianAccessibility", "HuXiangLianPianAccessibility", "1.0.0")]
+    public class Main : BaseUnityPlugin
     {
         #region Fields
         private bool _gameReady = false;
@@ -45,6 +44,11 @@ namespace HuXiangLianPian.Accessibility
         /// </summary>
         public static bool DebugMode = false;
 
+        /// <summary>
+        /// BepInEx 日志实例，其他类可以通过 Main.Log 访问。
+        /// </summary>
+        public static BepInEx.Logging.ManualLogSource Log { get; private set; }
+
         // 处理器 - 每个功能/界面一个
         private MenuHandler _menuHandler;
         // private DialogHandler _dialogHandler;
@@ -52,12 +56,15 @@ namespace HuXiangLianPian.Accessibility
         #endregion
 
         #region Lifecycle
-        public override void OnInitializeMelon()
+        void Awake()
         {
+            Log = Logger;
+            ModConfig.Initialize(Config);
             ScreenReader.Initialize();
             Loc.Initialize();
             InitializeHandlers();
-            MelonCoroutines.Start(AnnounceStartupDelayed());
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            StartCoroutine(AnnounceStartupDelayed());
         }
 
         private void InitializeHandlers()
@@ -74,7 +81,7 @@ namespace HuXiangLianPian.Accessibility
             ScreenReader.Say(Loc.Get("mod_loaded"));
         }
 
-        public override void OnUpdate()
+        void Update()
         {
             // 等待游戏准备就绪
             if (!CheckGameReady()) return;
@@ -96,7 +103,7 @@ namespace HuXiangLianPian.Accessibility
                 if (Engine.Initialized)
                 {
                     _gameReady = true;
-                    MelonLogger.Msg("Naninovel引擎已就绪");
+                    Log.LogInfo("Naninovel引擎已就绪");
                     OnGameReady();
                 }
             }
@@ -117,15 +124,16 @@ namespace HuXiangLianPian.Accessibility
             // 比如订阅Naninovel事件
         }
 
-        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            MelonLogger.Msg($"场景已加载: {sceneName}");
-            DebugLogger.LogState($"场景切换为: {sceneName}");
+            Log.LogInfo($"场景已加载: {scene.name}");
+            DebugLogger.LogState($"场景切换为: {scene.name}");
             _gameReady = false; // 场景切换时重置
         }
 
-        public override void OnApplicationQuit()
+        void OnDestroy()
         {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
             ScreenReader.Shutdown();
         }
         #endregion
@@ -142,7 +150,7 @@ namespace HuXiangLianPian.Accessibility
             {
                 DebugMode = !DebugMode;
                 var status = DebugMode ? Loc.Get("debug_mode_enabled") : Loc.Get("debug_mode_disabled");
-                MelonLogger.Msg(status);
+                Log.LogInfo(status);
                 ScreenReader.Say(status);
                 return true;
             }

@@ -1,49 +1,43 @@
-using MelonLoader;
+using BepInEx.Configuration;
 using UnityEngine;
 
 namespace HuXiangLianPian.Accessibility
 {
     /// <summary>
-    /// Mod configuration using MelonPreferences.
-    /// Settings are automatically saved to UserData/[ModName].cfg.
+    /// Mod configuration using BepInEx ConfigFile.
+    /// Settings are automatically saved to BepInEx/config/com.boz700908.HuXiangLianPianAccessibility.cfg.
     ///
     /// HOW THIS WORKS:
-    /// MelonPreferences creates a config file that persists between game sessions.
+    /// BepInEx ConfigFile creates a config file that persists between game sessions.
     /// Users can change settings in-game via a key combination (default: Ctrl+F11).
     /// The settings menu is navigated with arrow keys, values changed with Left/Right.
     ///
     /// HOW TO INTEGRATE:
-    /// 1. Call ModConfig.Initialize() in Main.OnInitializeMelon()
+    /// 1. Call ModConfig.Initialize(plugin.Config) in Main.Awake()
     /// 2. Add Ctrl+F11 handling in Main.ProcessHotkeys()
-    /// 3. Call ModConfig.Update() in Main.OnUpdate() (for settings menu input)
+    /// 3. Call ModConfig.Update() in Main.Update() (for settings menu input)
     /// 4. Use ModConfig.Verbosity, ModConfig.AnnounceEmpty etc. in your handlers
     /// </summary>
     public static class ModConfig
     {
-        #region Preferences
-
-        private static MelonPreferences_Category _category;
+        #region Config Entries
+        private static ConfigFile _config;
 
         // --- Add your settings here ---
-
-        private static MelonPreferences_Entry<int> _verbosity;
-        private static MelonPreferences_Entry<bool> _announceEmptyStates;
-        // private static MelonPreferences_Entry<float> _announcementDelay;
-
+        private static ConfigEntry<int> _verbosity;
+        private static ConfigEntry<bool> _announceEmptyStates;
+        // private static ConfigEntry<float> _announcementDelay;
         #endregion
 
         #region Public Accessors
-
         /// <summary>Announcement verbosity: 0=minimal, 1=normal, 2=verbose.</summary>
         public static int Verbosity => _verbosity.Value;
 
         /// <summary>Whether to announce empty states ("No items", "Inventory empty").</summary>
         public static bool AnnounceEmptyStates => _announceEmptyStates.Value;
-
         #endregion
 
         #region Settings Menu State
-
         private static bool _menuOpen = false;
         private static int _currentSettingIndex = 0;
 
@@ -54,32 +48,32 @@ namespace HuXiangLianPian.Accessibility
             "Announce empty states",
             // Add more as you add settings
         };
-
         #endregion
 
         #region Initialization
-
         /// <summary>
-        /// Initializes mod preferences. Call once in OnInitializeMelon().
+        /// Initializes mod preferences. Call once in Awake().
+        /// Pass the plugin's Config property: ModConfig.Initialize(Config);
         /// </summary>
-        public static void Initialize()
+        public static void Initialize(ConfigFile config)
         {
-            _category = MelonPreferences.CreateCategory("HuXiangLianPianAccessibility",
-                "HuXiangLianPianAccessibility Accessibility Settings");
+            _config = config;
 
-            _verbosity = _category.CreateEntry("Verbosity", 1,
-                description: "Announcement detail level: 0=minimal, 1=normal, 2=verbose");
+            _verbosity = config.Bind("Accessibility",
+                "Verbosity", 1,
+                new ConfigDescription(
+                    "Announcement detail level: 0=minimal, 1=normal, 2=verbose",
+                    new AcceptableValueRange<int>(0, 2)));
 
-            _announceEmptyStates = _category.CreateEntry("AnnounceEmptyStates", true,
-                description: "Announce when lists or inventories are empty");
+            _announceEmptyStates = config.Bind("Accessibility",
+                "AnnounceEmptyStates", true,
+                "Announce when lists or inventories are empty");
 
             // Add more settings here following the same pattern
         }
-
         #endregion
 
         #region Settings Menu
-
         /// <summary>
         /// Toggles the in-game settings menu. Call from Main when user presses Ctrl+F11.
         /// </summary>
@@ -95,7 +89,7 @@ namespace HuXiangLianPian.Accessibility
             }
             else
             {
-                MelonPreferences.Save();
+                _config.Save();
                 ScreenReader.Say("Mod settings closed and saved");
             }
         }
@@ -107,7 +101,7 @@ namespace HuXiangLianPian.Accessibility
         public static bool IsMenuOpen => _menuOpen;
 
         /// <summary>
-        /// Processes input for the settings menu. Call from Main.OnUpdate()
+        /// Processes input for the settings menu. Call from Main.Update()
         /// when IsMenuOpen is true.
         /// </summary>
         public static void Update()
@@ -129,7 +123,6 @@ namespace HuXiangLianPian.Accessibility
                     _currentSettingIndex = 0;
                 AnnounceCurrentSetting();
             }
-
             // Change values
             else if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
@@ -139,7 +132,6 @@ namespace HuXiangLianPian.Accessibility
             {
                 ChangeCurrentSetting(1);
             }
-
             // Close
             else if (Input.GetKeyDown(KeyCode.Escape))
             {
@@ -153,7 +145,6 @@ namespace HuXiangLianPian.Accessibility
             string value = GetCurrentSettingValue();
             int pos = _currentSettingIndex + 1;
             int total = _settingNames.Length;
-
             ScreenReader.Say($"{pos} of {total}: {name}, {value}. Left right to change.");
         }
 
@@ -169,10 +160,8 @@ namespace HuXiangLianPian.Accessibility
                         2 => "Verbose",
                         _ => _verbosity.Value.ToString()
                     };
-
                 case 1: // AnnounceEmptyStates
                     return _announceEmptyStates.Value ? "On" : "Off";
-
                 default:
                     return "Unknown";
             }
@@ -188,7 +177,6 @@ namespace HuXiangLianPian.Accessibility
                     if (newVal > 2) newVal = 0;
                     _verbosity.Value = newVal;
                     break;
-
                 case 1: // AnnounceEmptyStates (toggle)
                     _announceEmptyStates.Value = !_announceEmptyStates.Value;
                     break;
@@ -199,7 +187,6 @@ namespace HuXiangLianPian.Accessibility
             string value = GetCurrentSettingValue();
             ScreenReader.Say($"{name}: {value}");
         }
-
         #endregion
     }
 }
@@ -208,8 +195,8 @@ namespace HuXiangLianPian.Accessibility
 // INTEGRATION EXAMPLE (add to Main.cs):
 // ============================================================================
 //
-// In OnInitializeMelon():
-//     ModConfig.Initialize();
+// In Awake():
+//     ModConfig.Initialize(Config);
 //
 // In ProcessHotkeys():
 //     // Ctrl+F11 = Mod Settings
@@ -219,7 +206,7 @@ namespace HuXiangLianPian.Accessibility
 //         return true;
 //     }
 //
-// In OnUpdate(), BEFORE other handler updates:
+// In Update(), BEFORE other handler updates:
 //     if (ModConfig.IsMenuOpen)
 //     {
 //         ModConfig.Update();
