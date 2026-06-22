@@ -1,10 +1,10 @@
-using BepInEx;
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.EventSystems;
 using System.Collections;
+using BepInEx;
 using Naninovel;
 using Naninovel.UI;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 // ============================================================================
 // 重要：游戏代码访问
@@ -383,10 +383,10 @@ namespace HuXiangLianPian.Accessibility
                     if (saveLoadUI != null)
                     {
                         saveLoadUI.Visible = true;
-                        
+
                         // 切换到存档面板
                         SwitchToSavePanel(saveLoadUI);
-                        
+
                         ScreenReader.Say("打开存档菜单");
                         Log.LogInfo("已打开存档菜单");
                     }
@@ -423,10 +423,10 @@ namespace HuXiangLianPian.Accessibility
                     if (saveLoadUI != null)
                     {
                         saveLoadUI.Visible = true;
-                        
+
                         // 切换到读档面板
                         SwitchToLoadPanel(saveLoadUI);
-                        
+
                         ScreenReader.Say("打开读档菜单");
                         Log.LogInfo("已打开读档菜单");
                     }
@@ -457,7 +457,7 @@ namespace HuXiangLianPian.Accessibility
             try
             {
                 // 方法1：尝试设置PresentationMode属性（SaveLoadMenu的标准方式）
-                var presentationModeProperty = saveLoadUI.GetType().GetProperty("PresentationMode", 
+                var presentationModeProperty = saveLoadUI.GetType().GetProperty("PresentationMode",
                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
                 if (presentationModeProperty != null)
                 {
@@ -473,7 +473,7 @@ namespace HuXiangLianPian.Accessibility
                 }
 
                 // 方法2：尝试调用SetPresentationMode方法
-                var setPresentationModeMethod = saveLoadUI.GetType().GetMethod("SetPresentationMode", 
+                var setPresentationModeMethod = saveLoadUI.GetType().GetMethod("SetPresentationMode",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
                 if (setPresentationModeMethod != null)
                 {
@@ -509,7 +509,7 @@ namespace HuXiangLianPian.Accessibility
                             }
                         }
                     }
-                    
+
                     if (switchButton != null && switchButton.interactable)
                     {
                         // 检查当前是否已经是存档面板
@@ -522,7 +522,7 @@ namespace HuXiangLianPian.Accessibility
                         }
                     }
                 }
-                
+
                 // 方法4：尝试找到SaveButton并点击（备用）
                 if (uiGameObject != null)
                 {
@@ -540,7 +540,7 @@ namespace HuXiangLianPian.Accessibility
                             }
                         }
                     }
-                    
+
                     if (saveButton != null && saveButton.interactable)
                     {
                         saveButton.onClick.Invoke();
@@ -548,9 +548,9 @@ namespace HuXiangLianPian.Accessibility
                         return;
                     }
                 }
-                
+
                 // 方法5：尝试通过PanelType属性设置（备用）
-                var panelTypeProperty = saveLoadUI.GetType().GetProperty("PanelType", 
+                var panelTypeProperty = saveLoadUI.GetType().GetProperty("PanelType",
                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
                 if (panelTypeProperty != null)
                 {
@@ -559,7 +559,7 @@ namespace HuXiangLianPian.Accessibility
                     Log.LogInfo("已通过PanelType属性设置为存档面板");
                     return;
                 }
-                
+
                 Log.LogWarning("无法切换到存档面板，未找到可用的方法");
             }
             catch (System.Exception e)
@@ -576,7 +576,7 @@ namespace HuXiangLianPian.Accessibility
             try
             {
                 // 方法1：尝试设置PresentationMode属性（SaveLoadMenu的标准方式）
-                var presentationModeProperty = saveLoadUI.GetType().GetProperty("PresentationMode", 
+                var presentationModeProperty = saveLoadUI.GetType().GetProperty("PresentationMode",
                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
                 if (presentationModeProperty != null)
                 {
@@ -592,7 +592,7 @@ namespace HuXiangLianPian.Accessibility
                 }
 
                 // 方法2：尝试调用SetPresentationMode方法
-                var setPresentationModeMethod = saveLoadUI.GetType().GetMethod("SetPresentationMode", 
+                var setPresentationModeMethod = saveLoadUI.GetType().GetMethod("SetPresentationMode",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
                 if (setPresentationModeMethod != null)
                 {
@@ -628,7 +628,7 @@ namespace HuXiangLianPian.Accessibility
                             }
                         }
                     }
-                    
+
                     if (switchButton != null && switchButton.interactable)
                     {
                         // 检查当前是否已经是读档面板
@@ -641,7 +641,7 @@ namespace HuXiangLianPian.Accessibility
                         }
                     }
                 }
-                
+
                 // 方法4：尝试找到LoadButton并点击（备用）
                 if (uiGameObject != null)
                 {
@@ -659,7 +659,7 @@ namespace HuXiangLianPian.Accessibility
                             }
                         }
                     }
-                    
+
                     if (loadButton != null && loadButton.interactable)
                     {
                         loadButton.onClick.Invoke();
@@ -667,9 +667,9 @@ namespace HuXiangLianPian.Accessibility
                         return;
                     }
                 }
-                
+
                 // 方法5：尝试通过PanelType属性设置（备用）
-                var panelTypeProperty = saveLoadUI.GetType().GetProperty("PanelType", 
+                var panelTypeProperty = saveLoadUI.GetType().GetProperty("PanelType",
                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
                 if (panelTypeProperty != null)
                 {
@@ -678,7 +678,7 @@ namespace HuXiangLianPian.Accessibility
                     Log.LogInfo("已通过PanelType属性设置为读档面板");
                     return;
                 }
-                
+
                 Log.LogWarning("无法切换到读档面板，未找到可用的方法");
             }
             catch (System.Exception e)
@@ -694,10 +694,10 @@ namespace HuXiangLianPian.Accessibility
             string help = Loc.Get("help_title") + " " +
                 "F1 帮助。 " +
                 "F12 切换调试模式。 ";
-                // 实现更多功能后添加：
-                // "F2 对话状态。 " +
-                // "Tab 下一个元素。 " +
-                // "回车 确认。";
+            // 实现更多功能后添加：
+            // "F2 对话状态。 " +
+            // "Tab 下一个元素。 " +
+            // "回车 确认。";
             ScreenReader.Say(help);
         }
         #endregion

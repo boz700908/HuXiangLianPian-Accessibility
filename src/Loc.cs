@@ -46,10 +46,10 @@ namespace HuXiangLianPian.Accessibility
                 default:
                     _currentLang = "zh";
                     break;
-                // 未来添加更多语言：
-                // case "en":
-                //     _currentLang = "en";
-                //     break;
+                    // 未来添加更多语言：
+                    // case "en":
+                    //     _currentLang = "en";
+                    //     break;
             }
         }
 
@@ -109,9 +109,9 @@ namespace HuXiangLianPian.Accessibility
                 case "zh":
                 default:
                     return _chinese;
-                // 未来添加更多语言：
-                // case "en":
-                //     return _english;
+                    // 未来添加更多语言：
+                    // case "en":
+                    //     return _english;
             }
         }
 

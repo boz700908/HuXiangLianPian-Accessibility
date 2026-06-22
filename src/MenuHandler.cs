@@ -1,11 +1,11 @@
 using System;
+using NananaGames.UI;
+using Naninovel;
+using Naninovel.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using TMPro;
-using Naninovel;
-using Naninovel.UI;
-using NananaGames.UI;
 
 namespace HuXiangLianPian.Accessibility
 {
@@ -73,7 +73,7 @@ namespace HuXiangLianPian.Accessibility
             { "NoButton", "否" },
             { "OkButton", "确定" },
         };
-        
+
         // 硬编码的滑块文本映射
         private static readonly System.Collections.Generic.Dictionary<string, string> _sliderTextMap = new System.Collections.Generic.Dictionary<string, string>
         {
@@ -87,7 +87,7 @@ namespace HuXiangLianPian.Accessibility
             { "Voice", "角色语音" },
             { "SE", "SE音量" },
         };
-        
+
         // 滑块值变化实时朗读
         private Slider _currentSlider;
         private float _lastSliderValue;

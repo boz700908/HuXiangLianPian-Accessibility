@@ -1,20 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- 目标框架从 Directory.Build.props 读取 -->
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
     <AssemblyName>HuXiangLianPianAccessibility</AssemblyName>
     <RootNamespace>HuXiangLianPian.Accessibility</RootNamespace>
   </PropertyGroup>
-
-  <!-- 排除反编译和模板目录 -->
   <ItemGroup>
     <Compile Remove="..\decompiled\**" />
     <Compile Remove="..\templates\**" />
   </ItemGroup>
-
-  <!-- BepInEx 引用 -->
   <ItemGroup>
     <Reference Include="BepInEx">
       <HintPath>$(GameDir)\BepInEx\core\BepInEx.dll</HintPath>
@@ -25,8 +21,6 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
-  <!-- Unity 引用 -->
   <ItemGroup>
     <Reference Include="UnityEngine">
       <HintPath>$(GameDir)\$(GameName)_Data\Managed\UnityEngine.dll</HintPath>
@@ -57,8 +51,6 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
-  <!-- 游戏主程序集 -->
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(GameDir)\$(GameName)_Data\Managed\Assembly-CSharp.dll</HintPath>
@@ -73,8 +65,6 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
-
-  <!-- 编译后自动复制到 BepInEx plugins 目录 -->
   <Target Name="CopyToPlugins" AfterTargets="Build">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\BepInEx\plugins\" />
     <Message Text="Copied $(TargetFileName) to BepInEx plugins folder" Importance="High" />

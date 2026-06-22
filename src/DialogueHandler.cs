@@ -1,7 +1,7 @@
 using System;
-using UnityEngine;
 using Naninovel;
 using TMPro;
+using UnityEngine;
 
 namespace HuXiangLianPian.Accessibility
 {
@@ -28,7 +28,7 @@ namespace HuXiangLianPian.Accessibility
             try
             {
                 _textPrinterManager = Engine.GetService<ITextPrinterManager>();
-                
+
                 if (_textPrinterManager != null)
                 {
                     _textPrinterManager.OnPrintFinished += OnPrintFinished;
@@ -83,9 +83,9 @@ namespace HuXiangLianPian.Accessibility
                 // 方法1：尝试从args.Printer获取文本（ITextPrinter接口）
                 try
                 {
-                    var printerProperty = args.GetType().GetProperty("Printer", 
+                    var printerProperty = args.GetType().GetProperty("Printer",
                         System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    
+
                     if (printerProperty != null)
                     {
                         var printer = printerProperty.GetValue(args);
@@ -97,9 +97,9 @@ namespace HuXiangLianPian.Accessibility
                             }
 
                             // 尝试获取Text属性
-                            var textProp = printer.GetType().GetProperty("Text", 
-                                System.Reflection.BindingFlags.Public | 
-                                System.Reflection.BindingFlags.Instance | 
+                            var textProp = printer.GetType().GetProperty("Text",
+                                System.Reflection.BindingFlags.Public |
+                                System.Reflection.BindingFlags.Instance |
                                 System.Reflection.BindingFlags.FlattenHierarchy);
                             if (textProp != null)
                             {
