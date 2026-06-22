@@ -42,7 +42,7 @@ namespace HuXiangLianPian.Accessibility
         private float _lastReadyCheckLogTime = 0f;
         private const float READY_CHECK_LOG_INTERVAL = 3f; // 每3秒打一次日志
         private float _lastUpdateLogTime = 0f;
-        private const float UPDATE_LOG_INTERVAL = 5f; // 每5秒打一次Update心跳日志
+        private const float UPDATE_LOG_INTERVAL = 30f; // 每30秒打一次Update心跳日志
         private int _updateFrameCount = 0;
         private bool _firstUpdateLog = false; // 是否已输出首次Update日志
 
@@ -72,30 +72,15 @@ namespace HuXiangLianPian.Accessibility
         void Awake()
         {
             Log = Logger;
-            Log.LogInfo("=== 无障碍Mod生命周期: Awake ===");
-            Log.LogInfo($"调试模式: {(DebugMode ? "开启" : "关闭")}");
-            Log.LogInfo($"GameObject名称: {gameObject.name}");
-            Log.LogInfo($"已启用: {enabled}");
+            Log.LogInfo($"无障碍Mod已加载 (调试模式: {(DebugMode ? "开启" : "关闭")})");
 
             ModConfig.Initialize(Config);
-            Log.LogInfo("配置已初始化");
-
             ScreenReader.Initialize();
-            Log.LogInfo("屏幕阅读器已初始化");
-
             Loc.Initialize();
-            Log.LogInfo("本地化已初始化");
-
             InitializeHandlers();
-            Log.LogInfo("处理器已初始化");
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             StartCoroutine(AnnounceStartupDelayed());
-
-            // 暂时注释掉InvokeRepeating，先确认Mod基本功能正常
-            // InvokeRepeating(nameof(InvokeHeartbeat), 1f, 5f);
-
-            Log.LogInfo("=== 无障碍Mod生命周期: Awake完成 ===");
         }
 
         void OnEnable()
@@ -123,11 +108,11 @@ namespace HuXiangLianPian.Accessibility
 
         private IEnumerator AnnounceStartupDelayed()
         {
-            Log.LogInfo("启动语音协程开始");
+            // Log.LogInfo("启动语音协程开始");
             // 短暂延迟，确保屏幕阅读器准备就绪
             yield return new WaitForSeconds(1f);
             ScreenReader.Say(Loc.Get("mod_loaded"));
-            Log.LogInfo("启动语音已播放");
+            // Log.LogInfo("启动语音已播放");
         }
 
         void Update()
@@ -138,7 +123,7 @@ namespace HuXiangLianPian.Accessibility
             if (!_firstUpdateLog)
             {
                 _firstUpdateLog = true;
-                Log.LogInfo($"=== 首次Update - 第{_updateFrameCount}帧 ===");
+                // Log.LogInfo($"=== 首次Update - 第{_updateFrameCount}帧 ===");
             }
 
             // 每隔几秒打一次心跳日志，确认Update在正常执行

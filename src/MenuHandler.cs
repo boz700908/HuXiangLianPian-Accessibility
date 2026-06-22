@@ -21,7 +21,7 @@ namespace HuXiangLianPian.Accessibility
         private float _lastAnnounceTime;
         private const float MIN_ANNOUNCE_INTERVAL = 0.1f; // 最小朗读间隔，防止刷屏
         private float _lastLogTime = 0f;
-        private const float LOG_INTERVAL = 5f; // 每5秒打一次状态日志
+        private const float LOG_INTERVAL = 30f; // 每30秒打一次状态日志
 
         // 当前打开的菜单类型
         private MenuType _currentMenuType = MenuType.None;
