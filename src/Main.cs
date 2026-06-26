@@ -259,6 +259,14 @@ namespace HuXiangLianPian.Accessibility
                 return true;
             }
 
+            // F5 = 修复ESC卡死问题
+            if (Input.GetKeyDown(KeyCode.F5))
+            {
+                DebugLogger.LogInput("F5", "修复ESC卡死");
+                FixInputBlock();
+                return true;
+            }
+
             return false;
         }
         #endregion
@@ -684,6 +692,79 @@ namespace HuXiangLianPian.Accessibility
             catch (System.Exception e)
             {
                 Log.LogWarning($"切换到读档面板时出错: {e.Message}");
+            }
+        }
+        #endregion
+
+        #region Fixes
+        /// <summary>
+        /// 修复ESC键导致的输入阻塞问题
+        /// 按ESC后游戏可能因为AddBlockingUI未正确移除而卡死
+        /// 此方法尝试清理所有阻塞UI，恢复输入
+        /// </summary>
+        private void FixInputBlock()
+        {
+            try
+            {
+                Log.LogInfo("正在尝试修复输入阻塞...");
+                
+                // 尝试获取Naninovel引擎服务
+                if (!Engine.Initialized)
+                {
+                    Log.LogWarning("引擎未初始化，无法修复输入阻塞");
+                    ScreenReader.Say("引擎未初始化");
+                    return;
+                }
+                
+                var inputManager = Engine.GetService<IInputManager>();
+                var uiManager = Engine.GetService<IUIManager>();
+                
+                if (inputManager == null || uiManager == null)
+                {
+                    Log.LogWarning("无法获取输入管理器或UI管理器");
+                    ScreenReader.Say("无法获取管理器");
+                    return;
+                }
+                
+                // 获取所有UI，尝试移除所有阻塞
+                var allUIs = new System.Collections.Generic.List<IManagedUI>();
+                uiManager.GetManagedUIs(allUIs);
+                
+                int removedCount = 0;
+                foreach (var ui in allUIs)
+                {
+                    try
+                    {
+                        inputManager.RemoveBlockingUI(ui);
+                        removedCount++;
+                    }
+                    catch (System.Exception)
+                    {
+                        // 忽略单个UI的错误
+                    }
+                }
+                
+                Log.LogInfo($"已清理{removedCount}个UI的阻塞状态");
+                
+                // 重新启用输入处理
+                inputManager.ProcessInput = true;
+                
+                // 尝试重置EventSystem
+                if (EventSystem.current != null)
+                {
+                    EventSystem.current.enabled = false;
+                    EventSystem.current.enabled = true;
+                    Log.LogInfo("已重置EventSystem");
+                }
+                
+                ScreenReader.Say($"已修复输入阻塞，清理{removedCount}个UI");
+                Log.LogInfo("输入阻塞修复完成");
+            }
+            catch (System.Exception e)
+            {
+                Log.LogError($"修复输入阻塞时出错: {e.Message}");
+                Log.LogError($"堆栈跟踪: {e.StackTrace}");
+                ScreenReader.Say("修复失败");
             }
         }
         #endregion
