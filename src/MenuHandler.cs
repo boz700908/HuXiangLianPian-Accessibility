@@ -26,6 +26,8 @@ namespace HuXiangLianPian.Accessibility
         // 当前打开的菜单类型
         private MenuType _currentMenuType = MenuType.None;
         private MenuType _lastMenuType = MenuType.None;
+        private bool? _lastSettingsSoundTabOn;
+        private string _lastSaveLoadMode;
 
         // 硬编码的按钮文本映射（图片按钮无法动态获取文本）
         private static readonly System.Collections.Generic.Dictionary<string, string> _buttonTextMap = new System.Collections.Generic.Dictionary<string, string>
@@ -65,6 +67,11 @@ namespace HuXiangLianPian.Accessibility
             { "PrevButton", "上一页" },
             { "NextButton", "下一页" },
             { "LastButton", "最后一页" },
+            { "LoadButton", "切换到读档界面" },
+            { "SaveButton", "切换到存档界面" },
+            { "PreviousPageButton", "上一页" },
+            { "NextPageButton", "下一页" },
+            { "SaveLoadSwitchPanelButton", "切换存档读档界面" },
             
             // 确认对话框
             { "ConfirmButton", "确认" },
@@ -128,7 +135,29 @@ namespace HuXiangLianPian.Accessibility
             // 检测当前菜单类型
             DetectCurrentMenu();
 
+            if (_currentMenuType == MenuType.None)
+            {
+                ClearSelectionState();
+                return;
+            }
+
+            RefreshSettingsNavigationOnTabChange();
+            RefreshSaveLoadNavigationOnPanelChange();
+
             var currentSelected = EventSystem.current.currentSelectedGameObject;
+            if (currentSelected != null && !IsSelectableVisibleAndInteractable(currentSelected.GetComponent<Selectable>()))
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo($"清理无效选中对象: {currentSelected.name}");
+                }
+                EventSystem.current.SetSelectedGameObject(null);
+                _lastSelectedObject = null;
+                _currentSlider = null;
+                currentSelected = null;
+                RefreshCurrentMenuNavigation();
+                currentSelected = EventSystem.current.currentSelectedGameObject;
+            }
 
             // 选中对象变化时
             if (currentSelected != _lastSelectedObject)
@@ -280,7 +309,14 @@ namespace HuXiangLianPian.Accessibility
                     }
                     else
                     {
+                        MenuType closedMenuType = _lastMenuType;
                         DebugLogger.Log(LogCategory.State, "菜单关闭");
+                        ClearSelectionState();
+                        RestoreAfterSettingsClosed(uiManager);
+                        if (closedMenuType == MenuType.SaveLoad)
+                        {
+                            Main.AnnounceCurrentDialogue("存档读档菜单返回后");
+                        }
                     }
                 }
             }
@@ -292,6 +328,57 @@ namespace HuXiangLianPian.Accessibility
                     _lastLogTime = Time.unscaledTime;
                     Main.Log.LogWarning($"检测菜单时出错: {e.GetType().Name} - {e.Message}");
                 }
+            }
+        }
+
+        /// <summary>
+        /// 清理菜单关闭后遗留的键盘焦点，避免 EventSystem 停在隐藏 UI 元素上。
+        /// </summary>
+        private void ClearSelectionState()
+        {
+            _lastSelectedObject = null;
+            _currentSlider = null;
+            _lastSettingsSoundTabOn = null;
+            _lastSaveLoadMode = null;
+
+            if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo($"菜单关闭，清空选中对象: {EventSystem.current.currentSelectedGameObject.name}");
+                }
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
+
+        /// <summary>
+        /// 游戏的 SettingsUI Esc 逻辑只隐藏设置菜单；从标题菜单进入时需要恢复标题菜单。
+        /// </summary>
+        private void RestoreAfterSettingsClosed(IUIManager uiManager)
+        {
+            if (_lastMenuType != MenuType.Settings || uiManager == null) return;
+
+            try
+            {
+                var settingsUI = uiManager.GetUI<SettingsUI>();
+                if (settingsUI == null || settingsUI.Visible || settingsUI.BackUIType != SettingsUI.UIType.Title)
+                {
+                    return;
+                }
+
+                var titleUI = uiManager.GetUI<ITitleUI>();
+                if (titleUI != null && !titleUI.Visible)
+                {
+                    titleUI.Show();
+                    if (Main.DebugMode)
+                    {
+                        Main.Log.LogInfo("设置菜单关闭后恢复标题菜单");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Main.Log.LogWarning($"设置菜单关闭后恢复标题菜单时出错: {e.GetType().Name} - {e.Message}");
             }
         }
 
@@ -488,7 +575,7 @@ namespace HuXiangLianPian.Accessibility
                 // 选中第一个可交互元素
                 foreach (var sel in selectables)
                 {
-                    if (sel.interactable && sel.gameObject.activeInHierarchy)
+                    if (IsSelectableVisibleAndInteractable(sel))
                     {
                         EventSystem.current.SetSelectedGameObject(sel.gameObject);
                         if (Main.DebugMode)
@@ -520,7 +607,7 @@ namespace HuXiangLianPian.Accessibility
                 var visibleSelectables = new System.Collections.Generic.List<Selectable>();
                 foreach (var sel in selectables)
                 {
-                    if (sel.interactable && sel.gameObject.activeInHierarchy)
+                    if (IsSelectableVisibleAndInteractable(sel))
                     {
                         visibleSelectables.Add(sel);
                     }
@@ -528,90 +615,25 @@ namespace HuXiangLianPian.Accessibility
 
                 if (visibleSelectables.Count <= 1) return;
 
-                // 按照位置排序，设置导航目标
-                // 对于每个按钮，找到最近的上方、下方、左方、右方的按钮
+                SortSelectablesForLinearNavigation(visibleSelectables);
+
                 for (int i = 0; i < visibleSelectables.Count; i++)
                 {
                     var current = visibleSelectables[i];
                     var nav = current.navigation;
                     nav.mode = Navigation.Mode.Explicit;
 
-                    Vector2 currentPos = current.transform.position;
-
-                    Selectable nearestUp = null;
-                    Selectable nearestDown = null;
-                    Selectable nearestLeft = null;
-                    Selectable nearestRight = null;
-
-                    float nearestUpDist = float.MaxValue;
-                    float nearestDownDist = float.MaxValue;
-                    float nearestLeftDist = float.MaxValue;
-                    float nearestRightDist = float.MaxValue;
-
-                    for (int j = 0; j < visibleSelectables.Count; j++)
-                    {
-                        if (i == j) continue;
-
-                        var other = visibleSelectables[j];
-                        Vector2 otherPos = other.transform.position;
-
-                        // 计算方向和距离
-                        float dx = otherPos.x - currentPos.x;
-                        float dy = otherPos.y - currentPos.y;
-                        float dist = new Vector2(dx, dy).magnitude;
-
-                        // 判断方向（允许一定的角度偏差）
-                        float angle = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
-
-                        // 右方：角度在 -45 到 45 度之间
-                        if (angle > -45 && angle <= 45 && dx > 0)
-                        {
-                            if (dist < nearestRightDist)
-                            {
-                                nearestRight = other;
-                                nearestRightDist = dist;
-                            }
-                        }
-                        // 左方：角度在 135 到 225 度之间（或 -135 到 -180 度）
-                        else if ((angle > 135 || angle <= -135) && dx < 0)
-                        {
-                            if (dist < nearestLeftDist)
-                            {
-                                nearestLeft = other;
-                                nearestLeftDist = dist;
-                            }
-                        }
-                        // 上方：角度在 45 到 135 度之间
-                        else if (angle > 45 && angle <= 135 && dy > 0)
-                        {
-                            if (dist < nearestUpDist)
-                            {
-                                nearestUp = other;
-                                nearestUpDist = dist;
-                            }
-                        }
-                        // 下方：角度在 -135 到 -45 度之间
-                        else if (angle > -135 && angle <= -45 && dy < 0)
-                        {
-                            if (dist < nearestDownDist)
-                            {
-                                nearestDown = other;
-                                nearestDownDist = dist;
-                            }
-                        }
-                    }
-
-                    nav.selectOnUp = nearestUp;
-                    nav.selectOnDown = nearestDown;
-                    nav.selectOnLeft = nearestLeft;
-                    nav.selectOnRight = nearestRight;
+                    nav.selectOnUp = i > 0 ? visibleSelectables[i - 1] : null;
+                    nav.selectOnDown = i < visibleSelectables.Count - 1 ? visibleSelectables[i + 1] : null;
+                    nav.selectOnLeft = null;
+                    nav.selectOnRight = null;
 
                     current.navigation = nav;
                 }
 
                 if (Main.DebugMode)
                 {
-                    Main.Log.LogInfo($"手动导航 - 已为 {visibleSelectables.Count} 个可见元素设置导航目标");
+                    Main.Log.LogInfo($"线性导航 - 已为 {visibleSelectables.Count} 个可见元素设置上下导航");
                 }
             }
             catch (System.Exception e)
@@ -621,6 +643,436 @@ namespace HuXiangLianPian.Accessibility
                     Main.Log.LogWarning($"手动设置导航时出错: {e.Message}");
                 }
             }
+        }
+
+        private void SortSelectablesForLinearNavigation(System.Collections.Generic.List<Selectable> selectables)
+        {
+            if (TrySortSaveLoadSelectables(selectables))
+            {
+                return;
+            }
+
+            selectables.Sort((a, b) =>
+            {
+                int priorityCompare = GetNavigationPriority(a).CompareTo(GetNavigationPriority(b));
+                if (priorityCompare != 0) return priorityCompare;
+
+                Vector3 aPos = a.transform.position;
+                Vector3 bPos = b.transform.position;
+
+                float yDiff = bPos.y - aPos.y;
+                if (Mathf.Abs(yDiff) > 8f)
+                {
+                    return yDiff > 0f ? 1 : -1;
+                }
+
+                float xDiff = aPos.x - bPos.x;
+                if (Mathf.Abs(xDiff) > 8f)
+                {
+                    return xDiff > 0f ? 1 : -1;
+                }
+
+                return string.CompareOrdinal(GetTransformPath(a.transform), GetTransformPath(b.transform));
+            });
+        }
+
+        private int GetNavigationPriority(Selectable selectable)
+        {
+            if (selectable == null) return 100;
+            string name = selectable.name;
+
+            if (name == "SettingToggle") return 0;
+            if (name == "SoundToggle") return 1;
+            if (selectable is Slider) return 10;
+            if (name == "ReturnButton") return 80;
+            if (name == "ReturnTitleButton") return 90;
+            if (name == "ExitButton") return 91;
+            return 50;
+        }
+
+        private bool TrySortSaveLoadSelectables(System.Collections.Generic.List<Selectable> selectables)
+        {
+            bool hasSaveLoadSlot = false;
+            foreach (var selectable in selectables)
+            {
+                if (selectable != null && selectable.GetComponent<SaveLoadSlot>() != null)
+                {
+                    hasSaveLoadSlot = true;
+                    break;
+                }
+            }
+
+            if (!hasSaveLoadSlot)
+            {
+                return false;
+            }
+
+            var result = new System.Collections.Generic.List<Selectable>();
+            var slots = new System.Collections.Generic.List<SaveLoadSlot>();
+            foreach (var selectable in selectables)
+            {
+                var slot = selectable != null ? selectable.GetComponent<SaveLoadSlot>() : null;
+                if (slot != null)
+                {
+                    slots.Add(slot);
+                }
+            }
+
+            slots.Sort((a, b) => a.SlotNumber.CompareTo(b.SlotNumber));
+            foreach (var slot in slots)
+            {
+                var slotSelectable = slot.GetComponent<Selectable>();
+                if (slotSelectable != null && selectables.Contains(slotSelectable) && !result.Contains(slotSelectable))
+                {
+                    result.Add(slotSelectable);
+                }
+
+                var deleteButton = FindDeleteButtonForSlot(slot);
+                if (deleteButton != null && selectables.Contains(deleteButton) && !result.Contains(deleteButton))
+                {
+                    result.Add(deleteButton);
+                }
+            }
+
+            AddByNames(result, selectables, true, "PageBtn_");
+            AddByNames(result, selectables, "QuickButton", "AutoButton", "FirstButton", "PrevButton", "NextButton", "LastButton");
+            AddByNames(result, selectables, "LoadButton", "SaveButton", "SaveLoadSwitchPanelButton");
+            AddByNames(result, selectables, "ReturnTitleButton", "ExitButton", "ReturnButton");
+
+            foreach (var selectable in selectables)
+            {
+                if (!result.Contains(selectable))
+                {
+                    result.Add(selectable);
+                }
+            }
+
+            selectables.Clear();
+            selectables.AddRange(result);
+            return true;
+        }
+
+        private Selectable FindDeleteButtonForSlot(SaveLoadSlot slot)
+        {
+            if (slot == null) return null;
+
+            var buttons = slot.GetComponentsInChildren<Button>(true);
+            foreach (var button in buttons)
+            {
+                if (button != null && button.name == "DeleteButton" && IsSelectableVisibleAndInteractable(button))
+                {
+                    return button;
+                }
+            }
+
+            return null;
+        }
+
+        private void AddByNames(System.Collections.Generic.List<Selectable> target, System.Collections.Generic.List<Selectable> source, params string[] names)
+        {
+            AddByNames(target, source, prefixMatch: false, names: names);
+        }
+
+        private void AddByNames(System.Collections.Generic.List<Selectable> target, System.Collections.Generic.List<Selectable> source, bool prefixMatch, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                foreach (var selectable in source)
+                {
+                    if (selectable == null || target.Contains(selectable)) continue;
+
+                    bool matches = prefixMatch
+                        ? selectable.name.StartsWith(name, StringComparison.Ordinal)
+                        : selectable.name == name;
+                    if (matches)
+                    {
+                        target.Add(selectable);
+                    }
+                }
+            }
+        }
+
+        private string GetTransformPath(Transform transform)
+        {
+            if (transform == null) return string.Empty;
+
+            string path = transform.name;
+            Transform parent = transform.parent;
+            while (parent != null)
+            {
+                path = parent.name + "/" + path;
+                parent = parent.parent;
+            }
+
+            return path;
+        }
+
+        /// <summary>
+        /// 设置菜单的标签页切换不会重新打开 UI，需要在标签状态变化后重建导航。
+        /// </summary>
+        private void RefreshSettingsNavigationOnTabChange()
+        {
+            if (_currentMenuType != MenuType.Settings || EventSystem.current == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var uiManager = Engine.GetService<IUIManager>();
+                var settingsUI = uiManager?.GetUI<ISettingsUI>() as MonoBehaviour;
+                if (settingsUI == null)
+                {
+                    return;
+                }
+
+                var soundToggleTransform = settingsUI.transform.Find("SoundToggle");
+                Toggle soundToggle = soundToggleTransform != null ? soundToggleTransform.GetComponent<Toggle>() : null;
+                if (soundToggle == null)
+                {
+                    var toggles = settingsUI.GetComponentsInChildren<Toggle>(true);
+                    foreach (var toggle in toggles)
+                    {
+                        if (toggle.name == "SoundToggle")
+                        {
+                            soundToggle = toggle;
+                            break;
+                        }
+                    }
+                }
+
+                if (soundToggle == null)
+                {
+                    return;
+                }
+
+                bool soundTabOn = soundToggle.isOn;
+                if (_lastSettingsSoundTabOn.HasValue && _lastSettingsSoundTabOn.Value == soundTabOn)
+                {
+                    return;
+                }
+
+                _lastSettingsSoundTabOn = soundTabOn;
+                var selectables = settingsUI.GetComponentsInChildren<Selectable>(true);
+                SetupManualNavigation(selectables);
+
+                var currentSelected = EventSystem.current.currentSelectedGameObject;
+                var currentSelectable = currentSelected != null ? currentSelected.GetComponent<Selectable>() : null;
+                if (!IsSelectableVisibleAndInteractable(currentSelectable))
+                {
+                    SelectFirstVisibleSelectable(selectables, soundTabOn ? "SoundToggle" : "SettingToggle");
+                }
+
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo($"设置菜单标签切换后刷新导航: {(soundTabOn ? "声音" : "设置")}");
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"刷新设置菜单标签导航时出错: {e.GetType().Name} - {e.Message}");
+                }
+            }
+        }
+
+        private void RefreshSaveLoadNavigationOnPanelChange()
+        {
+            if (_currentMenuType != MenuType.SaveLoad || EventSystem.current == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var uiManager = Engine.GetService<IUIManager>();
+                var saveLoadUI = uiManager?.GetUI<ISaveLoadUI>() as MonoBehaviour;
+                if (saveLoadUI == null)
+                {
+                    return;
+                }
+
+                string currentMode = GetSaveLoadMode(saveLoadUI);
+                EnsureSaveLoadSwitchButtonVisible(saveLoadUI, currentMode);
+                if (!string.IsNullOrEmpty(_lastSaveLoadMode) && _lastSaveLoadMode == currentMode)
+                {
+                    return;
+                }
+
+                _lastSaveLoadMode = currentMode;
+                var selectables = saveLoadUI.GetComponentsInChildren<Selectable>(true);
+                SetupManualNavigation(selectables);
+
+                var currentSelected = EventSystem.current.currentSelectedGameObject;
+                var currentSelectable = currentSelected != null ? currentSelected.GetComponent<Selectable>() : null;
+                if (!IsSelectableVisibleAndInteractable(currentSelectable))
+                {
+                    SelectFirstVisibleSelectable(selectables, currentMode == "Save" ? "UI_SaveSlot (Clone)" : "UI_LoadSlot (Clone)");
+                }
+
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogInfo($"存档读档面板切换后刷新导航: {currentMode}");
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"刷新存档读档面板导航时出错: {e.GetType().Name} - {e.Message}");
+                }
+            }
+        }
+
+        private void EnsureSaveLoadSwitchButtonVisible(MonoBehaviour saveLoadUI, string currentMode)
+        {
+            if (saveLoadUI == null) return;
+
+            string buttonName = currentMode == "Save" ? "LoadButton" : "SaveButton";
+            var buttonTransform = FindChildRecursive(saveLoadUI.transform, buttonName);
+            var buttonBehaviour = buttonTransform != null ? buttonTransform.GetComponent<ScriptableUIBehaviour>() : null;
+            if (buttonBehaviour != null && !buttonBehaviour.Visible)
+            {
+                buttonBehaviour.Show();
+            }
+
+            var switchTransform = FindChildRecursive(saveLoadUI.transform, "SaveLoadSwitchPanelButton");
+            var switchBehaviour = switchTransform != null ? switchTransform.GetComponent<ScriptableUIBehaviour>() : null;
+            if (switchBehaviour != null && !switchBehaviour.Visible)
+            {
+                switchBehaviour.Show();
+            }
+        }
+
+        private string GetSaveLoadMode(MonoBehaviour saveLoadUI)
+        {
+            try
+            {
+                var property = saveLoadUI.GetType().GetProperty("PresentationMode",
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.FlattenHierarchy);
+                object value = property?.GetValue(saveLoadUI, null);
+                if (value != null)
+                {
+                    return value.ToString();
+                }
+            }
+            catch
+            {
+                // Fallback below.
+            }
+
+            Transform savePanel = FindChildRecursive(saveLoadUI.transform, "SavePanel");
+            Transform loadPanel = FindChildRecursive(saveLoadUI.transform, "LoadPanel");
+            if (savePanel != null && savePanel.gameObject.activeInHierarchy) return "Save";
+            if (loadPanel != null && loadPanel.gameObject.activeInHierarchy) return "Load";
+            return "Unknown";
+        }
+
+        private void RefreshCurrentMenuNavigation()
+        {
+            try
+            {
+                var uiManager = Engine.GetService<IUIManager>();
+                if (uiManager == null) return;
+
+                IManagedUI ui = null;
+                switch (_currentMenuType)
+                {
+                    case MenuType.Title:
+                        ui = uiManager.GetUI<ITitleUI>();
+                        break;
+                    case MenuType.Settings:
+                        ui = uiManager.GetUI<ISettingsUI>();
+                        break;
+                    case MenuType.SaveLoad:
+                        ui = uiManager.GetUI<ISaveLoadUI>();
+                        break;
+                    case MenuType.Backlog:
+                        ui = uiManager.GetUI<IBacklogUI>();
+                        break;
+                    case MenuType.Confirmation:
+                        ui = uiManager.GetUI<IConfirmationUI>();
+                        break;
+                }
+
+                var uiGameObject = ui as MonoBehaviour;
+                if (uiGameObject == null) return;
+
+                var selectables = uiGameObject.GetComponentsInChildren<Selectable>(true);
+                SetupManualNavigation(selectables);
+                SelectFirstVisibleSelectable(selectables);
+            }
+            catch (System.Exception e)
+            {
+                if (Main.DebugMode)
+                {
+                    Main.Log.LogWarning($"刷新当前菜单导航时出错: {e.GetType().Name} - {e.Message}");
+                }
+            }
+        }
+
+        private void SelectFirstVisibleSelectable(Selectable[] selectables, string preferredName = null)
+        {
+            Selectable fallback = null;
+            foreach (var sel in selectables)
+            {
+                if (!IsSelectableVisibleAndInteractable(sel))
+                {
+                    continue;
+                }
+
+                if (fallback == null)
+                {
+                    fallback = sel;
+                }
+
+                if (!string.IsNullOrEmpty(preferredName) && sel.name == preferredName)
+                {
+                    EventSystem.current.SetSelectedGameObject(sel.gameObject);
+                    return;
+                }
+            }
+
+            if (fallback != null)
+            {
+                EventSystem.current.SetSelectedGameObject(fallback.gameObject);
+            }
+        }
+
+        private bool IsSelectableVisibleAndInteractable(Selectable selectable)
+        {
+            if (selectable == null || !selectable.interactable || !selectable.gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+
+            var canvasGroups = selectable.GetComponentsInParent<CanvasGroup>(true);
+            foreach (var canvasGroup in canvasGroups)
+            {
+                if (!canvasGroup.interactable || canvasGroup.alpha <= 0.01f)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private Transform FindChildRecursive(Transform root, string childName)
+        {
+            if (root == null) return null;
+            if (root.name == childName) return root;
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindChildRecursive(root.GetChild(i), childName);
+                if (found != null) return found;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -899,7 +1351,11 @@ namespace HuXiangLianPian.Accessibility
 
             // 先检查硬编码的映射（图片按钮无法动态获取文本）
             string label = toggle.name;
-            if (_buttonTextMap.TryGetValue(toggle.name, out string hardcodedText))
+            if (TryGetSaveLoadPageLabel(toggle.name, out string pageLabel))
+            {
+                label = pageLabel;
+            }
+            else if (_buttonTextMap.TryGetValue(toggle.name, out string hardcodedText))
             {
                 label = hardcodedText;
             }
@@ -929,7 +1385,11 @@ namespace HuXiangLianPian.Accessibility
 
             // 先检查硬编码的映射（图片按钮无法动态获取文本）
             string label = toggle.name;
-            if (_buttonTextMap.TryGetValue(toggle.name, out string hardcodedText))
+            if (TryGetSaveLoadPageLabel(toggle.name, out string pageLabel))
+            {
+                label = pageLabel;
+            }
+            else if (_buttonTextMap.TryGetValue(toggle.name, out string hardcodedText))
             {
                 label = hardcodedText;
             }
@@ -950,6 +1410,29 @@ namespace HuXiangLianPian.Accessibility
         }
 
         /// <summary>
+        /// 存档/读档页码 Toggle 使用 PageBtn_N 对象名，没有可读取文本。
+        /// </summary>
+        private bool TryGetSaveLoadPageLabel(string objectName, out string label)
+        {
+            label = string.Empty;
+
+            const string prefix = "PageBtn_";
+            if (string.IsNullOrEmpty(objectName) || !objectName.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            string pageNumberText = objectName.Substring(prefix.Length);
+            if (!int.TryParse(pageNumberText, out int pageNumber) || pageNumber <= 0)
+            {
+                return false;
+            }
+
+            label = $"第 {pageNumber} 页";
+            return true;
+        }
+
+        /// <summary>
         /// 获取Slider的文本。
         /// </summary>
         private string GetSliderText(Slider slider)
@@ -961,6 +1444,10 @@ namespace HuXiangLianPian.Accessibility
             if (_sliderTextMap.TryGetValue(slider.name, out string hardcodedText))
             {
                 label = hardcodedText;
+            }
+            else if (TryGetNearbyLabelText(slider.transform, out string nearbyLabel))
+            {
+                label = nearbyLabel;
             }
             else
             {
@@ -980,6 +1467,62 @@ namespace HuXiangLianPian.Accessibility
             }
 
             return $"{label}，{Mathf.RoundToInt(valuePercent)}%";
+        }
+
+        private bool TryGetNearbyLabelText(Transform transform, out string label)
+        {
+            label = string.Empty;
+            if (transform == null) return false;
+
+            Transform current = transform;
+            for (int depth = 0; depth < 4 && current != null; depth++, current = current.parent)
+            {
+                var texts = current.GetComponentsInChildren<TMP_Text>(true);
+                foreach (var text in texts)
+                {
+                    if (text == null || !text.gameObject.activeInHierarchy || string.IsNullOrWhiteSpace(text.text))
+                    {
+                        continue;
+                    }
+
+                    string normalized = NormalizeLabelText(text.text);
+                    if (!string.IsNullOrEmpty(normalized) && !LooksLikeValueText(normalized))
+                    {
+                        label = normalized;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private string NormalizeLabelText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+            string normalized = text.Trim();
+            normalized = normalized.Replace("\r", string.Empty).Replace("\n", string.Empty).Replace(" ", string.Empty);
+            return normalized;
+        }
+
+        private bool LooksLikeValueText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return true;
+
+            bool hasLetterOrDigit = false;
+            foreach (char c in text)
+            {
+                if (char.IsLetterOrDigit(c))
+                {
+                    hasLetterOrDigit = true;
+                    break;
+                }
+            }
+
+            if (!hasLetterOrDigit) return true;
+            if (text.EndsWith("%", StringComparison.Ordinal)) return true;
+            return false;
         }
 
         /// <summary>

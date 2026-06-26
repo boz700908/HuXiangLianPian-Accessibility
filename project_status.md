@@ -88,6 +88,59 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - GitHub 代码同步
 
 ## 重要变更记录
+### 2026-06-26: 重新反编译游戏自定义代码
+- **原因**: 剧情文本不能正常朗读，需要重新核对游戏真实代码和 Naninovel 调用路径
+- **已反编译程序集**:
+  - `Assembly-CSharp.dll` -> `decompiled/Assembly-CSharp/`
+  - `Live2D.Cubism.dll` -> `decompiled/Live2D.Cubism/`（第三方 Live2D SDK，用于排除非游戏逻辑）
+- **自定义代码范围**:
+  - `Assembly-CSharp.dll` 是主要游戏自定义逻辑，反编译后约 33 个文件
+  - 重点类型包括 `Huxiang.Naninovel.AutoCharacterAuthorImage`、`NananaGames.UI.SaveLoadMenu`、`SaveLoadSlot`、设置/标题/控制面板按钮类
+- **剧情朗读问题证据与结论**:
+  - BepInEx 日志显示 `DialogueHandler` 已初始化并订阅 `ITextPrinterManager.OnPrintFinished`
+  - 新增诊断日志后确认 `PrintText`、`OnPrintStarted`、`OnPrintFinished` 都会触发
+  - Naninovel 反编译源码显示 `PrintText` 会调用 `TextPrinterManager.Print()`，而 `TextPrinterManager.Print()` 会触发 `OnPrintStarted` 和 `OnPrintFinished`
+  - 根因：`LocalizableText.ToString()` 返回本地化键（如 `chapter00_01 #7.0 |#~742114ad|`），旧代码把它当成脚本路径跳过；实际正文需要通过 `LocalizableText` 到 `string` 的隐式转换解析
+  - 已修复：剧情正文改为 `string text = args.Message.Text`，作者标签为空时回退到 `Author.Id`
+
+### 2026-06-26: 修复 Esc 关闭菜单后的焦点卡死
+- **问题**: 在菜单中按 Esc 后，游戏 UI 会隐藏菜单，但 Unity `EventSystem` 可能仍选中隐藏菜单里的旧对象（如 `DeleteButton`），导致后续键盘导航和朗读停在不可见元素上，表现为界面卡死
+- **依据**: BepInEx 日志显示菜单关闭后仍出现 `MenuHandler` 处理隐藏菜单按钮的记录，随后 Unity/TMP 抛出 `NullReferenceException`
+- **修复**:
+  - 菜单关闭时清空 `EventSystem.current.currentSelectedGameObject`
+  - 每帧检测当前选中对象是否已不可见，若不可见则清空焦点和滑块状态
+- **说明**: 不拦截 Esc，不替换游戏原生 `Cancel` 逻辑，只清理 Mod 导航层遗留焦点
+- **设置菜单补充修复**:
+  - 根因：游戏自定义 `SettingsUI` 只记录 `BackUIType`，但没有重写 Naninovel 基类的 `HandleCancelInput()`；按 Esc 时基类只保存设置并隐藏设置菜单，不会像返回按钮那样恢复标题菜单
+  - 已修复：`MenuHandler` 检测到菜单状态从 `Settings` 变为 `None` 时，如果设置菜单来自标题菜单且已隐藏，则重新显示标题菜单
+  - 追加保护：当前菜单类型为 `None` 时不再处理 `EventSystem` 中遗留的旧选中对象，避免继续朗读隐藏设置控件
+- **存档/读档菜单补充修复**:
+  - 根因：Mod 的 F3/F4 直接设置 `ISaveLoadUI.Visible = true`，绕过了游戏自定义 `ControlPanelSaveLoadButton` 的上下文设置；原生按钮会设置 `SaveLoadMenu.BackUIType = Dialogue`、`PresentationMode` 并调用 `Show()`
+  - 已修复：F3/F4 改为先设置 `PresentationMode` 和 `BackUIType = Dialogue`，隐藏暂停菜单后调用 `Show()`，让 Esc/返回按钮按游戏原生逻辑关闭到剧情界面
+- **存档/读档图片按钮标签补全**:
+  - 日志确认页码控件朗读为 `PageBtn_1` 等内部对象名，且切换存档/读档、上一页、下一页图片按钮缺少语义标签
+  - 已补充 `LoadButton`、`SaveButton`、`PreviousPageButton`、`NextPageButton`、`SaveLoadSwitchPanelButton` 的中文映射
+  - 已为 `PageBtn_N` 增加规则解析，朗读为“第 N 页，开启/关闭”
+- **声音设置页面导航修复**:
+  - 问题：切换到 SOUND 标签后，设置菜单没有重新打开，旧的 Explicit 导航仍指向 Setting 标签页控件，方向键无法进入声音页滑块
+  - 依据：日志显示设置菜单打开时只执行一次 `FixNavigation`，并且 `activeInHierarchy` 仍能扫描到隐藏标签页下的 Slider/Toggle，无法判断当前视觉可见页
+  - 已修复：检测 `SoundToggle` 状态变化后重新计算设置菜单导航，并在导航过滤中排除 CanvasGroup 透明或不可交互的隐藏控件
+- **键盘导航模型优化**:
+  - 问题：旧导航算法按屏幕空间寻找最近控件，同时给上下左右都绑定焦点目标；复杂布局中方向键会横跳，左右键也会离开滑块
+  - 已修复：菜单导航改为线性顺序，上/下键浏览控件；不再为左/右设置焦点目标，让 Slider 保留左右键调值行为
+  - 设置菜单优先顺序：标签页、当前页滑块/开关、关闭/回标题/退出等底部按钮
+  - 对没有固定对象名的滑块（如多个 `UI_VoiceSlider`）增加附近标题文本解析，避免读出内部对象名
+- **存档/读档切换后导航修复**:
+  - 问题：在存档/读档界面点击 `SaveButton` 或 `LoadButton` 后，当前按钮会随面板切换隐藏，`EventSystem` 焦点被清空后没有重新落到新面板控件
+  - 已修复：检测 `SaveLoadMenu.PresentationMode` 变化后重新计算导航；若当前焦点无效，自动选中新面板的首个可见槽位
+- **读档后当前对话朗读兜底**:
+  - 问题：快速读档或从标题读档可能恢复到已经打印完成、正在等待输入的文本状态，不一定重新触发 `OnPrintFinished`
+  - 已修复：订阅 `IStateManager.OnGameLoadFinished`，读档完成后延迟数帧读取当前 `ITextPrinterActor.Messages` 最后一条并朗读
+- **存档/读档菜单后续修复**:
+  - 问题：切换到另一个面板后切换按钮可能隐藏；返回剧情后若没有新的 `PrintText`，剧情朗读可能停住
+  - 已修复：在存档/读档菜单保持当前面板对应切换按钮可见；菜单关闭回剧情后主动朗读当前文本打印器最后一条消息
+  - 导航顺序调整：存档槽位后紧跟该槽位的删除按钮，再进入下一个槽位；页码/翻页/切换/返回按钮排在槽位区域之后
+
 ### 2026-06-21: 完善Mod配置系统
 - **配置项**:
   - Verbosity（详细程度）：0=最小, 1=正常, 2=详细

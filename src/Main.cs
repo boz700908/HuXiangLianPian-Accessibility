@@ -42,7 +42,7 @@ namespace HuXiangLianPian.Accessibility
         private float _lastReadyCheckLogTime = 0f;
         private const float READY_CHECK_LOG_INTERVAL = 3f; // 每3秒打一次日志
         private float _lastUpdateLogTime = 0f;
-        private const float UPDATE_LOG_INTERVAL = 30f; // 每30秒打一次Update心跳日志
+        private const float UPDATE_LOG_INTERVAL = 5f; // 每5秒打一次Update心跳日志（调试用）
         private int _updateFrameCount = 0;
         private bool _firstUpdateLog = false; // 是否已输出首次Update日志
 
@@ -57,6 +57,7 @@ namespace HuXiangLianPian.Accessibility
         /// BepInEx 日志实例，其他类可以通过 Main.Log 访问。
         /// </summary>
         public static BepInEx.Logging.ManualLogSource Log { get; private set; }
+        private static Main _instance;
 
         // 处理器 - 每个功能/界面一个
         private MenuHandler _menuHandler;
@@ -71,6 +72,7 @@ namespace HuXiangLianPian.Accessibility
         #region Lifecycle
         void Awake()
         {
+            _instance = this;
             Log = Logger;
             Log.LogInfo($"无障碍Mod已加载 (调试模式: {(DebugMode ? "开启" : "关闭")})");
 
@@ -123,7 +125,7 @@ namespace HuXiangLianPian.Accessibility
             if (!_firstUpdateLog)
             {
                 _firstUpdateLog = true;
-                // Log.LogInfo($"=== 首次Update - 第{_updateFrameCount}帧 ===");
+                Log.LogInfo($"=== 首次Update - 第{_updateFrameCount}帧 ===");
             }
 
             // 每隔几秒打一次心跳日志，确认Update在正常执行
@@ -205,8 +207,18 @@ namespace HuXiangLianPian.Accessibility
 
         void OnDestroy()
         {
+            Log.LogInfo("=== 无障碍Mod生命周期: OnDestroy ===");
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            if (_instance == this)
+            {
+                _instance = null;
+            }
             ScreenReader.Shutdown();
+        }
+
+        public static void AnnounceCurrentDialogue(string reason)
+        {
+            _instance?._dialogueHandler?.AnnounceCurrentPrintedMessage(reason);
         }
         #endregion
 
@@ -259,14 +271,6 @@ namespace HuXiangLianPian.Accessibility
                 return true;
             }
 
-            // F5 = 修复ESC卡死问题
-            if (Input.GetKeyDown(KeyCode.F5))
-            {
-                DebugLogger.LogInput("F5", "修复ESC卡死");
-                FixInputBlock();
-                return true;
-            }
-
             return false;
         }
         #endregion
@@ -309,6 +313,7 @@ namespace HuXiangLianPian.Accessibility
                 }
             }
             // _dialogHandler.Update();
+            _dialogueHandler?.Update();
         }
         #endregion
 
@@ -390,10 +395,11 @@ namespace HuXiangLianPian.Accessibility
                     var saveLoadUI = uiManager.GetUI<ISaveLoadUI>();
                     if (saveLoadUI != null)
                     {
-                        saveLoadUI.Visible = true;
-
                         // 切换到存档面板
                         SwitchToSavePanel(saveLoadUI);
+                        SetSaveLoadBackUIType(saveLoadUI, "Dialogue");
+                        uiManager.GetUI<IPauseUI>()?.Hide();
+                        saveLoadUI.Show();
 
                         ScreenReader.Say("打开存档菜单");
                         Log.LogInfo("已打开存档菜单");
@@ -430,10 +436,11 @@ namespace HuXiangLianPian.Accessibility
                     var saveLoadUI = uiManager.GetUI<ISaveLoadUI>();
                     if (saveLoadUI != null)
                     {
-                        saveLoadUI.Visible = true;
-
                         // 切换到读档面板
                         SwitchToLoadPanel(saveLoadUI);
+                        SetSaveLoadBackUIType(saveLoadUI, "Dialogue");
+                        uiManager.GetUI<IPauseUI>()?.Hide();
+                        saveLoadUI.Show();
 
                         ScreenReader.Say("打开读档菜单");
                         Log.LogInfo("已打开读档菜单");
@@ -454,6 +461,30 @@ namespace HuXiangLianPian.Accessibility
             {
                 ScreenReader.Say("打开读档菜单失败");
                 Log.LogWarning($"打开读档菜单时出错: {e.Message}");
+            }
+        }
+
+        private void SetSaveLoadBackUIType(ISaveLoadUI saveLoadUI, string valueName)
+        {
+            try
+            {
+                var property = saveLoadUI.GetType().GetProperty("BackUIType",
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.FlattenHierarchy);
+                if (property == null || !property.PropertyType.IsEnum)
+                {
+                    Log.LogWarning("无法设置存读档菜单BackUIType，未找到枚举属性");
+                    return;
+                }
+
+                object value = System.Enum.Parse(property.PropertyType, valueName);
+                property.SetValue(saveLoadUI, value);
+                Log.LogInfo($"已设置存读档菜单BackUIType: {valueName}");
+            }
+            catch (System.Exception e)
+            {
+                Log.LogWarning($"设置存读档菜单BackUIType时出错: {e.Message}");
             }
         }
 
@@ -692,79 +723,6 @@ namespace HuXiangLianPian.Accessibility
             catch (System.Exception e)
             {
                 Log.LogWarning($"切换到读档面板时出错: {e.Message}");
-            }
-        }
-        #endregion
-
-        #region Fixes
-        /// <summary>
-        /// 修复ESC键导致的输入阻塞问题
-        /// 按ESC后游戏可能因为AddBlockingUI未正确移除而卡死
-        /// 此方法尝试清理所有阻塞UI，恢复输入
-        /// </summary>
-        private void FixInputBlock()
-        {
-            try
-            {
-                Log.LogInfo("正在尝试修复输入阻塞...");
-                
-                // 尝试获取Naninovel引擎服务
-                if (!Engine.Initialized)
-                {
-                    Log.LogWarning("引擎未初始化，无法修复输入阻塞");
-                    ScreenReader.Say("引擎未初始化");
-                    return;
-                }
-                
-                var inputManager = Engine.GetService<IInputManager>();
-                var uiManager = Engine.GetService<IUIManager>();
-                
-                if (inputManager == null || uiManager == null)
-                {
-                    Log.LogWarning("无法获取输入管理器或UI管理器");
-                    ScreenReader.Say("无法获取管理器");
-                    return;
-                }
-                
-                // 获取所有UI，尝试移除所有阻塞
-                var allUIs = new System.Collections.Generic.List<IManagedUI>();
-                uiManager.GetManagedUIs(allUIs);
-                
-                int removedCount = 0;
-                foreach (var ui in allUIs)
-                {
-                    try
-                    {
-                        inputManager.RemoveBlockingUI(ui);
-                        removedCount++;
-                    }
-                    catch (System.Exception)
-                    {
-                        // 忽略单个UI的错误
-                    }
-                }
-                
-                Log.LogInfo($"已清理{removedCount}个UI的阻塞状态");
-                
-                // 重新启用输入处理
-                inputManager.ProcessInput = true;
-                
-                // 尝试重置EventSystem
-                if (EventSystem.current != null)
-                {
-                    EventSystem.current.enabled = false;
-                    EventSystem.current.enabled = true;
-                    Log.LogInfo("已重置EventSystem");
-                }
-                
-                ScreenReader.Say($"已修复输入阻塞，清理{removedCount}个UI");
-                Log.LogInfo("输入阻塞修复完成");
-            }
-            catch (System.Exception e)
-            {
-                Log.LogError($"修复输入阻塞时出错: {e.Message}");
-                Log.LogError($"堆栈跟踪: {e.StackTrace}");
-                ScreenReader.Say("修复失败");
             }
         }
         #endregion
