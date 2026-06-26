@@ -42,7 +42,7 @@ namespace HuXiangLianPian.Accessibility
         private float _lastReadyCheckLogTime = 0f;
         private const float READY_CHECK_LOG_INTERVAL = 3f; // 每3秒打一次日志
         private float _lastUpdateLogTime = 0f;
-        private const float UPDATE_LOG_INTERVAL = 5f; // 每5秒打一次Update心跳日志（调试用）
+        private const float UPDATE_LOG_INTERVAL = 30f; // 每30秒打一次Update心跳日志
         private int _updateFrameCount = 0;
         private bool _firstUpdateLog = false; // 是否已输出首次Update日志
 
@@ -123,7 +123,7 @@ namespace HuXiangLianPian.Accessibility
             if (!_firstUpdateLog)
             {
                 _firstUpdateLog = true;
-                Log.LogInfo($"=== 首次Update - 第{_updateFrameCount}帧 ===");
+                // Log.LogInfo($"=== 首次Update - 第{_updateFrameCount}帧 ===");
             }
 
             // 每隔几秒打一次心跳日志，确认Update在正常执行
@@ -205,7 +205,6 @@ namespace HuXiangLianPian.Accessibility
 
         void OnDestroy()
         {
-            Log.LogInfo("=== 无障碍Mod生命周期: OnDestroy ===");
             SceneManager.sceneLoaded -= OnSceneLoaded;
             ScreenReader.Shutdown();
         }
