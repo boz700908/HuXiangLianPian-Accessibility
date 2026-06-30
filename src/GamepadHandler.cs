@@ -1,4 +1,6 @@
 using System;
+using Naninovel;
+using Naninovel.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -53,6 +55,7 @@ namespace HuXiangLianPian.Accessibility
                 return;
             }
 
+            if (ProcessBacklogShortcut()) return;
             ProcessSubmitCancelFallback();
             ProcessFallbackNavigation();
         }
@@ -175,10 +178,14 @@ namespace HuXiangLianPian.Accessibility
 
         private bool IsShortcutButtonDown()
         {
-            return _xinput.GetButtonDown(XInputGamepad.Button.RightThumb)
-                || Input.GetKeyDown(KeyCode.JoystickButton9)
-                || Input.GetKeyDown(KeyCode.JoystickButton10)
-                || Input.GetKeyDown(KeyCode.JoystickButton11);
+            return _xinput.GetButtonDown(XInputGamepad.Button.Back)
+                || Input.GetKeyDown(KeyCode.JoystickButton6);
+        }
+
+        private bool IsBacklogButtonDown()
+        {
+            return _xinput.GetButtonDown(XInputGamepad.Button.Y)
+                || Input.GetKeyDown(KeyCode.JoystickButton5);
         }
 
         private bool IsSubmitButtonDown()
@@ -191,6 +198,43 @@ namespace HuXiangLianPian.Accessibility
         {
             return _xinput.GetButtonDown(XInputGamepad.Button.B)
                 || Input.GetKeyDown(KeyCode.JoystickButton1);
+        }
+
+        private bool ProcessBacklogShortcut()
+        {
+            if (!IsBacklogButtonDown()) return false;
+
+            try
+            {
+                var uiManager = Engine.GetService<IUIManager>();
+                var backlogUI = uiManager?.GetUI<IBacklogUI>();
+                if (backlogUI == null)
+                {
+                    ScreenReader.Say("历史记录不可用");
+                    DebugLogger.LogInput("Gamepad Y", "历史记录不可用");
+                    return true;
+                }
+
+                if (backlogUI.Visible)
+                {
+                    backlogUI.Hide();
+                    DebugLogger.LogInput("Gamepad Y", "关闭历史记录");
+                }
+                else
+                {
+                    backlogUI.Show();
+                    ScreenReader.Say("历史记录");
+                    DebugLogger.LogInput("Gamepad Y", "打开历史记录");
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Main.Log.LogWarning($"处理手柄历史记录快捷键时出错: {e.GetType().Name} - {e.Message}");
+                ScreenReader.Say("打开历史记录失败");
+                return true;
+            }
         }
 
         private void ProcessSubmitCancelFallback()

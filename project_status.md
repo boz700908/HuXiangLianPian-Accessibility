@@ -298,3 +298,4 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - 调试日志：首次检测到手柄按钮、左摇杆/方向轴、可能的右摇杆轴时写入 BepInEx 日志，方便核对 Steam Input 映射。
 - Xbox 手柄补充修复：日志确认 Steam Input 开启时 Unity Legacy Input 报告 `Joysticks: none`，按钮不会稳定暴露为 `JoystickButton*`；关闭 Steam Input 后手柄走 XInput 正常。已新增 XInput 直读兜底，用于 A/B/R3、十字键和左摇杆输入，并保留 Unity 旧输入作为备用。
 - 可视提示字体修复：TMP 默认字体缺少中文字符，启动提示会显示方块；提示层改为动态加载 Windows 中文字体，并新增 `UnityEngine.TextRenderingModule` 引用。
+- 手柄历史记录与快捷键调整：R3 被自动模式占用，不再作为 Mod 快捷模式入口；快捷模式改为 Xbox View/Back 键。Y 键补充打开/关闭历史记录，绕过 Unity Legacy Input 在 XInput 模式下收不到 `ShowBacklog` 的问题。

@@ -131,7 +131,7 @@ namespace HuXiangLianPian.Accessibility
             // 短暂延迟，确保屏幕阅读器准备就绪
             yield return new WaitForSeconds(1f);
             ScreenReader.Say(Loc.Get("mod_loaded"));
-            VisualHintOverlay.Show("键盘：上下选择 左右调节 Enter确认 Esc返回 F1快存 F2快读 F3存档 F4读档；手柄：方向选择 A确认 B返回 R3快捷", 8f);
+            VisualHintOverlay.Show("键盘：上下选择 左右调节 Enter确认 Esc返回 F1快存 F2快读 F3存档 F4读档；手柄：方向选择 A确认 B返回 Y历史 View快捷", 8f);
             // Log.LogInfo("启动语音已播放");
         }
 
