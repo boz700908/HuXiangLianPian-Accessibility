@@ -296,3 +296,5 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - 新增 `GamepadHandler`：支持 Steam Deck / Xbox 风格手柄输入检测、轴输入防抖、菜单导航兜底和 R3 快捷模式。
 - R3 快捷模式：上快速存档、下快速读档、左打开存档菜单、右打开读档菜单，B 或再次 R3 取消；动作继续复用既有 `SaveLoadGuard`。
 - 调试日志：首次检测到手柄按钮、左摇杆/方向轴、可能的右摇杆轴时写入 BepInEx 日志，方便核对 Steam Input 映射。
+- Xbox 手柄补充修复：日志确认 Steam Input 开启时 Unity Legacy Input 报告 `Joysticks: none`，按钮不会稳定暴露为 `JoystickButton*`；关闭 Steam Input 后手柄走 XInput 正常。已新增 XInput 直读兜底，用于 A/B/R3、十字键和左摇杆输入，并保留 Unity 旧输入作为备用。
+- 可视提示字体修复：TMP 默认字体缺少中文字符，启动提示会显示方块；提示层改为动态加载 Windows 中文字体，并新增 `UnityEngine.TextRenderingModule` 引用。

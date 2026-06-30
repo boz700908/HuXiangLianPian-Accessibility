@@ -1,5 +1,4 @@
 using System.Collections;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +10,7 @@ namespace HuXiangLianPian.Accessibility
         private static VisualHintOverlay _instance;
 
         private Canvas _canvas;
-        private TMP_Text _text;
+        private Text _text;
         private Coroutine _hideRoutine;
 
         public static void Ensure()
@@ -60,11 +59,12 @@ namespace HuXiangLianPian.Accessibility
 
             var textGo = new GameObject("Text");
             textGo.transform.SetParent(panel.transform, false);
-            _text = textGo.AddComponent<TextMeshProUGUI>();
+            _text = textGo.AddComponent<Text>();
+            _text.font = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Arial" }, 28);
             _text.fontSize = 28;
-            _text.alignment = TextAlignmentOptions.Center;
-            _text.enableWordWrapping = true;
-            _text.overflowMode = TextOverflowModes.Truncate;
+            _text.alignment = TextAnchor.MiddleCenter;
+            _text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _text.verticalOverflow = VerticalWrapMode.Truncate;
             _text.color = Color.white;
 
             var textRect = textGo.GetComponent<RectTransform>();

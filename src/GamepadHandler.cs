@@ -15,10 +15,13 @@ namespace HuXiangLianPian.Accessibility
         private readonly Action _quickLoad;
         private readonly Action _openSaveMenu;
         private readonly Action _openLoadMenu;
+        private readonly XInputGamepad _xinput = new XInputGamepad();
 
         private bool _shortcutMode;
         private float _lastNavigateTime;
+        private float _lastSubmitCancelTime;
         private bool _loggedAnyButton;
+        private bool _loggedJoystickNames;
         private bool _loggedLeftAxis;
         private bool _loggedRightAxis;
 
@@ -35,6 +38,7 @@ namespace HuXiangLianPian.Accessibility
 
         public void Update()
         {
+            _xinput.Update();
             LogDetectedInput();
 
             if (IsShortcutButtonDown())
@@ -49,6 +53,7 @@ namespace HuXiangLianPian.Accessibility
                 return;
             }
 
+            ProcessSubmitCancelFallback();
             ProcessFallbackNavigation();
         }
 
@@ -72,7 +77,7 @@ namespace HuXiangLianPian.Accessibility
 
         private void ProcessShortcutMode()
         {
-            if (Input.GetKeyDown(KeyCode.JoystickButton1) || Input.GetKeyDown(KeyCode.Escape))
+            if (IsCancelButtonDown() || Input.GetKeyDown(KeyCode.Escape))
             {
                 _shortcutMode = false;
                 VisualHintOverlay.Hide();
@@ -146,6 +151,12 @@ namespace HuXiangLianPian.Accessibility
 
         private Vector2 ReadGamepadDirection()
         {
+            Vector2 xinputDirection = _xinput.GetDigitalDirection();
+            if (xinputDirection != Vector2.zero)
+            {
+                return xinputDirection;
+            }
+
             float x = SafeGetAxis("Horizontal");
             float y = SafeGetAxis("Vertical");
 
@@ -164,19 +175,126 @@ namespace HuXiangLianPian.Accessibility
 
         private bool IsShortcutButtonDown()
         {
-            return Input.GetKeyDown(KeyCode.JoystickButton9);
+            return _xinput.GetButtonDown(XInputGamepad.Button.RightThumb)
+                || Input.GetKeyDown(KeyCode.JoystickButton9)
+                || Input.GetKeyDown(KeyCode.JoystickButton10)
+                || Input.GetKeyDown(KeyCode.JoystickButton11);
+        }
+
+        private bool IsSubmitButtonDown()
+        {
+            return _xinput.GetButtonDown(XInputGamepad.Button.A)
+                || Input.GetKeyDown(KeyCode.JoystickButton0);
+        }
+
+        private bool IsCancelButtonDown()
+        {
+            return _xinput.GetButtonDown(XInputGamepad.Button.B)
+                || Input.GetKeyDown(KeyCode.JoystickButton1);
+        }
+
+        private void ProcessSubmitCancelFallback()
+        {
+            if (Time.unscaledTime - _lastSubmitCancelTime < 0.12f) return;
+
+            if (IsSubmitButtonDown())
+            {
+                _lastSubmitCancelTime = Time.unscaledTime;
+                SubmitCurrentSelection();
+                return;
+            }
+
+            if (IsCancelButtonDown())
+            {
+                _lastSubmitCancelTime = Time.unscaledTime;
+                ActivateNamedButton("CancelButton", "NoButton", "ReturnButton", "CloseButton");
+            }
+        }
+
+        private void SubmitCurrentSelection()
+        {
+            var eventSystem = EventSystem.current;
+            var selected = eventSystem != null ? eventSystem.currentSelectedGameObject : null;
+            if (selected == null) return;
+
+            ExecuteEvents.Execute(selected, new BaseEventData(eventSystem), ExecuteEvents.submitHandler);
+            var button = selected.GetComponent<Button>();
+            if (button != null && button.IsInteractable())
+            {
+                button.onClick.Invoke();
+                DebugLogger.LogInput("Gamepad A", $"点击 {selected.name}");
+                return;
+            }
+
+            var toggle = selected.GetComponent<Toggle>();
+            if (toggle != null && toggle.IsInteractable())
+            {
+                toggle.isOn = !toggle.isOn;
+                DebugLogger.LogInput("Gamepad A", $"切换 {selected.name}");
+            }
+        }
+
+        private bool ActivateNamedButton(params string[] names)
+        {
+            if (EventSystem.current == null) return false;
+
+            foreach (var name in names)
+            {
+                var button = FindVisibleButton(name);
+                if (button == null) continue;
+
+                button.onClick.Invoke();
+                DebugLogger.LogInput("Gamepad B", $"点击 {button.name}");
+                return true;
+            }
+
+            return false;
+        }
+
+        private Button FindVisibleButton(string name)
+        {
+            var buttons = Resources.FindObjectsOfTypeAll<Button>();
+            foreach (var button in buttons)
+            {
+                if (button == null || button.name != name || !button.IsInteractable() || !button.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                var canvasGroups = button.GetComponentsInParent<CanvasGroup>(true);
+                bool blocked = false;
+                foreach (var canvasGroup in canvasGroups)
+                {
+                    if (!canvasGroup.interactable || canvasGroup.alpha <= 0.01f)
+                    {
+                        blocked = true;
+                        break;
+                    }
+                }
+
+                if (!blocked) return button;
+            }
+
+            return null;
         }
 
         private void LogDetectedInput()
         {
             if (!Main.DebugMode) return;
 
+            if (!_loggedJoystickNames)
+            {
+                _loggedJoystickNames = true;
+                string[] names = Input.GetJoystickNames();
+                Main.Log.LogInfo($"[INPUT] Unity joysticks: {(names == null || names.Length == 0 ? "none" : string.Join(", ", names))}; XInput connected: {_xinput.Connected}");
+            }
+
             if (!_loggedAnyButton)
             {
                 for (int i = 0; i <= 19; i++)
                 {
                     var key = KeyCode.JoystickButton0 + i;
-                    if (Input.GetKeyDown(key))
+                    if (Input.GetKeyDown(key) || Input.GetKey(key))
                     {
                         _loggedAnyButton = true;
                         Main.Log.LogInfo($"[INPUT] Gamepad button detected: {key}");
