@@ -241,25 +241,24 @@ namespace HuXiangLianPian.Accessibility
 
                 MenuType newMenuType = MenuType.None;
 
-                // 检查设置菜单
+                // 检查标题菜单
+                var titleUI = uiManager.GetUI<ITitleUI>();
+                if (titleUI != null && titleUI.Visible)
+                {
+                    newMenuType = MenuType.Title;
+                }
+
+                // 标题界面进入子菜单时 TitleUI 会继续可见，子菜单需要覆盖标题菜单。
                 var settingsUI = uiManager.GetUI<ISettingsUI>();
                 if (settingsUI != null && settingsUI.Visible)
                 {
                     newMenuType = MenuType.Settings;
                 }
 
-                // 检查存档/读档菜单
                 var saveLoadUI = uiManager.GetUI<ISaveLoadUI>();
                 if (saveLoadUI != null && saveLoadUI.Visible)
                 {
                     newMenuType = MenuType.SaveLoad;
-                }
-
-                // 检查标题菜单
-                var titleUI = uiManager.GetUI<ITitleUI>();
-                if (titleUI != null && titleUI.Visible)
-                {
-                    newMenuType = MenuType.Title;
                 }
 
                 // 检查历史记录
@@ -394,6 +393,13 @@ namespace HuXiangLianPian.Accessibility
 
                 var uiGameObject = confirmationUI as MonoBehaviour;
                 if (uiGameObject == null) return;
+
+                if (ConfirmationMessageTracker.TryConsume(out string pendingMessage))
+                {
+                    ScreenReader.Say(pendingMessage);
+                    DebugLogger.Log(LogCategory.Handler, "MenuHandler", $"确认对话框消息: {pendingMessage}");
+                    return;
+                }
 
                 // 尝试从子对象中找到消息文本
                 // 确认对话框通常会有一个包含消息文本的TMP_Text或Text组件

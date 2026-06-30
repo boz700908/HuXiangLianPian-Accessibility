@@ -62,6 +62,7 @@ namespace HuXiangLianPian.Accessibility
         // 处理器 - 每个功能/界面一个
         private MenuHandler _menuHandler;
         private DialogueHandler _dialogueHandler;
+        private ConfirmationPanelPatcher _confirmationPanelPatcher;
         // private DialogHandler _dialogHandler;
         // private SettingsHandler _settingsHandler;
 
@@ -80,6 +81,7 @@ namespace HuXiangLianPian.Accessibility
             ScreenReader.Initialize();
             Loc.Initialize();
             InitializeHandlers();
+            InitializePatches();
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             StartCoroutine(AnnounceStartupDelayed());
@@ -106,6 +108,12 @@ namespace HuXiangLianPian.Accessibility
             // 在这里创建处理器实例
             _menuHandler = new MenuHandler();
             _dialogueHandler = new DialogueHandler();
+        }
+
+        private void InitializePatches()
+        {
+            _confirmationPanelPatcher = new ConfirmationPanelPatcher();
+            _confirmationPanelPatcher.Apply();
         }
 
         private IEnumerator AnnounceStartupDelayed()
@@ -213,6 +221,8 @@ namespace HuXiangLianPian.Accessibility
             {
                 _instance = null;
             }
+            _confirmationPanelPatcher?.Dispose();
+            _confirmationPanelPatcher = null;
             ScreenReader.Shutdown();
         }
 

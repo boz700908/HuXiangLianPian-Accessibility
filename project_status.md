@@ -268,3 +268,8 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - **运行时**: .NET 6.0.36
 - **安装位置**: /home/user/.dotnet/tools/ilspycmd
 - **输出目录**: decompiled/（已在.gitignore中）
+# 2026-06-30: 标题界面存读档导航与确认框朗读
+- 根因：从标题界面进入读档菜单时，`ITitleUI.Visible` 仍为 true；旧检测顺序在识别到 `ISaveLoadUI.Visible` 后又被 Title 覆盖，导致 SaveLoad 导航优化没有执行。
+- 修复：调整菜单检测优先级，先记录 Title，再让 Settings/SaveLoad/Backlog/Confirmation 覆盖；标题界面进入的存读档菜单现在也使用同一套线性导航、面板切换刷新和删除按钮顺序。
+- 根因：删除存档确认内容通过 `ConfirmationPanel.Confirm(string message)` 入参传入，`ConfirmationPanel` 不公开保存消息；仅扫描 UI 子文本不可靠。
+- 修复：新增运行时 Harmony 补丁捕获 `Confirm(string message)` 入参，确认框出现时由 `MenuHandler` 优先朗读捕获到的原始消息。
