@@ -289,3 +289,10 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - 根因：游戏自定义 `NananaGames.UI.SaveLoadMenu` 的槽位点击直接调用 `stateManager.SaveGame(slotId)` / `stateManager.LoadGame(slotId)`，不经过 `Main.QuickSave()` / `Main.QuickLoad()`。
 - 修复：新增 `SaveLoadMenuPatcher` 和共享 `SaveLoadGuard`；手动存档在引擎未就绪、剧情未开始、播放位置无效或其它存读档正在进行时会被阻止；手动读档会在菜单隐藏和游戏重置前预读并验证目标存档的播放位置，坏档会朗读“这个存档无效，无法读取”并留在菜单中。
 - 同步调整：启动提示 `mod_loaded` 去掉“按F1查看帮助”。
+
+# 2026-06-30: Steam Deck 手柄与明眼玩家可视反馈
+- 新增启动可视提示：每次启动显示一次键盘和手柄常规操作方法，包括上下选择、左右调节、确认/返回、F1-F4 和 R3 快捷。
+- 新增当前选中项描边高亮：`MenuHandler` 在焦点变化时给当前 `Selectable` 的实际图形组件加高对比描边，焦点清空或菜单关闭时恢复。
+- 新增 `GamepadHandler`：支持 Steam Deck / Xbox 风格手柄输入检测、轴输入防抖、菜单导航兜底和 R3 快捷模式。
+- R3 快捷模式：上快速存档、下快速读档、左打开存档菜单、右打开读档菜单，B 或再次 R3 取消；动作继续复用既有 `SaveLoadGuard`。
+- 调试日志：首次检测到手柄按钮、左摇杆/方向轴、可能的右摇杆轴时写入 BepInEx 日志，方便核对 Steam Input 映射。

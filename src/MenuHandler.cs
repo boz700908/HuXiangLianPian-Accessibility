@@ -335,6 +335,7 @@ namespace HuXiangLianPian.Accessibility
         /// </summary>
         private void ClearSelectionState()
         {
+            SelectionHighlighter.Clear();
             _lastSelectedObject = null;
             _currentSlider = null;
             _lastSettingsSoundTabOn = null;
@@ -1197,7 +1198,13 @@ namespace HuXiangLianPian.Accessibility
         /// </summary>
         private void HandleSelectionChanged(GameObject selected, bool force = false)
         {
-            if (selected == null) return;
+            if (selected == null)
+            {
+                SelectionHighlighter.Clear();
+                return;
+            }
+
+            SelectionHighlighter.Select(selected);
 
             // 更新当前滑块
             var slider = selected.GetComponent<Slider>();

@@ -62,6 +62,7 @@ namespace HuXiangLianPian.Accessibility
         // 处理器 - 每个功能/界面一个
         private MenuHandler _menuHandler;
         private DialogueHandler _dialogueHandler;
+        private GamepadHandler _gamepadHandler;
         private ConfirmationPanelPatcher _confirmationPanelPatcher;
         private SaveLoadMenuPatcher _saveLoadMenuPatcher;
         // private DialogHandler _dialogHandler;
@@ -83,6 +84,7 @@ namespace HuXiangLianPian.Accessibility
             ModConfig.Initialize(Config);
             ScreenReader.Initialize();
             Loc.Initialize();
+            VisualHintOverlay.Ensure();
             InitializeHandlers();
             InitializePatches();
 
@@ -111,6 +113,7 @@ namespace HuXiangLianPian.Accessibility
             // 在这里创建处理器实例
             _menuHandler = new MenuHandler();
             _dialogueHandler = new DialogueHandler();
+            _gamepadHandler = new GamepadHandler(QuickSave, QuickLoad, OpenSaveMenu, OpenLoadMenu);
         }
 
         private void InitializePatches()
@@ -128,6 +131,7 @@ namespace HuXiangLianPian.Accessibility
             // 短暂延迟，确保屏幕阅读器准备就绪
             yield return new WaitForSeconds(1f);
             ScreenReader.Say(Loc.Get("mod_loaded"));
+            VisualHintOverlay.Show("键盘：上下选择 左右调节 Enter确认 Esc返回 F1快存 F2快读 F3存档 F4读档；手柄：方向选择 A确认 B返回 R3快捷", 8f);
             // Log.LogInfo("启动语音已播放");
         }
 
@@ -332,6 +336,7 @@ namespace HuXiangLianPian.Accessibility
             }
             // _dialogHandler.Update();
             _dialogueHandler?.Update();
+            _gamepadHandler?.Update();
         }
         #endregion
 
