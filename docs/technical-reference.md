@@ -388,7 +388,7 @@ public static class ScreenReader
         }
     }
 
-    public static void Say(string text, bool interrupt = true)
+    public static void Say(string text, bool interrupt = false)
     {
         if (_available && !string.IsNullOrEmpty(text))
             Tolk_Output(text, interrupt);

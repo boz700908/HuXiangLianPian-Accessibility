@@ -261,9 +261,8 @@ When to Announce
 
 Speech Interruption
 -------------------
-New announcements should interrupt previous ones:
+New announcements should not interrupt previous ones by default:
 ```csharp
-ScreenReader.Stop();  // Interrupt
 ScreenReader.Say(text);
 ```
 

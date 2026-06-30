@@ -67,13 +67,13 @@ Example: "Cannot do that: Inventory full"
 
 ### Queued vs. Interrupting Announcements
 
-**Interrupting (Standard):** Stops previous speech, speaks immediately
-**Queued:** Waits until previous speech finishes
+**Non-interrupting (Standard):** Waits until previous speech finishes
+**Interrupting:** Stops previous speech and speaks immediately; reserve this for user-approved urgent cases
 
-Use queued for additional info after a main announcement. Tolk's `Tolk_Output(text, interrupt)` supports this directly - passing `false` for the interrupt parameter queues the message:
+Use non-interrupting output by default. Tolk's `Tolk_Output(text, interrupt)` supports this directly - passing `false` for the interrupt parameter queues the message:
 
 ```csharp
-// Main message (interrupts previous speech)
+// Main message (queues without interrupting current speech)
 ScreenReader.Say("Quest accepted: Find the lost artifact");
 
 // Additional info (queued - waits for previous speech to finish)
@@ -89,7 +89,7 @@ ScreenReader.Say("Press J to open quest log", false);
 
 When multiple events happen at once (e.g., combat + status change + popup), you need to decide what the user hears first. This is highly game-specific - there is no universal rule. Consider these rough guidelines and adapt to each game:
 
-**Higher priority (typically interrupt):**
+**Higher priority (speak soon, but don't interrupt unless explicitly needed):**
 - Critical state changes (health critical, game over, death)
 - Screen/mode transitions (menu opened, battle started)
 - Dialog text and response options
@@ -101,7 +101,7 @@ When multiple events happen at once (e.g., combat + status change + popup), you 
 - Hints and tooltips
 - Available key commands after panel opening
 
-**Simple implementation:** For most mods, using `ScreenReader.Say(text)` for important things (interrupts previous speech) and `ScreenReader.SayQueued(text)` for additional info (waits) is sufficient. Only build a full priority queue system if you have a game with many simultaneous events (e.g., real-time combat with UI overlays).
+**Simple implementation:** For most mods, using `ScreenReader.Say(text)` for normal announcements is sufficient. Only pass `true` for the interrupt parameter when the project has explicitly decided an urgent message must cut off current speech.
 
 **When in doubt:** Test with a screen reader and listen. If important information gets drowned out by less important announcements, increase priority of the important one. If the user misses context because everything interrupts, use more queuing.
 
@@ -182,7 +182,7 @@ Handler → AnnouncementManager → ScreenReader → Tolk → Screen Reader
 
 ### What It Could Do
 
-- **Priority filtering:** Critical messages (health critical, game over) always interrupt. Low-priority messages (ambient hints) only speak when nothing else is queued.
+- **Priority filtering:** Critical messages (health critical, game over) are spoken first when possible. Low-priority messages (ambient hints) only speak when nothing else is queued.
 - **Duplicate suppression:** If "Health: 45" is already queued, don't queue it again.
 - **Verbosity control:** Reduce detail level when many events are competing. Full detail when things are calm.
 - **Rate limiting:** In a rapid combat log, summarize instead of reading every line ("3 enemies defeated" instead of announcing each one).
@@ -192,7 +192,7 @@ Handler → AnnouncementManager → ScreenReader → Tolk → Screen Reader
 - Adds complexity that most mods don't need
 - Harder to debug (messages go through an extra layer)
 - Turn-based games, menu-heavy games, and most indie games don't have enough simultaneous events to justify it
-- Simple `Say()` (interrupt) and `SayQueued()` (queue) cover 90% of cases
+- Simple `Say()` (queued/non-interrupting) covers 90% of cases
 
 **Recommendation:** Start without an AnnouncementManager. If you find that important messages are getting lost in a flood of less important ones, that's the signal to introduce one. The Announcement Priority section above gives simpler alternatives to try first.
 

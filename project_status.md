@@ -268,6 +268,10 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - **运行时**: .NET 6.0.36
 - **安装位置**: /home/user/.dotnet/tools/ilspycmd
 - **输出目录**: decompiled/（已在.gitignore中）
+# 2026-06-30: 屏幕阅读器输出默认不打断
+- 根因：`ScreenReader.Say` 的默认参数是 `interrupt = true`，所有未显式传参的朗读都会中断当前屏幕阅读器输出。
+- 修复：`ScreenReader.Say` 默认改为 `interrupt = false`，运行代码中的现有调用全部变为不打断输出；文档示例同步改为默认排队，只有明确紧急场景才显式传 `true`。
+
 # 2026-06-30: 标题界面存读档导航与确认框朗读
 - 根因：从标题界面进入读档菜单时，`ITitleUI.Visible` 仍为 true；旧检测顺序在识别到 `ISaveLoadUI.Visible` 后又被 Title 覆盖，导致 SaveLoad 导航优化没有执行。
 - 修复：调整菜单检测优先级，先记录 Title，再让 Settings/SaveLoad/Backlog/Confirmation 覆盖；标题界面进入的存读档菜单现在也使用同一套线性导航、面板切换刷新和删除按钮顺序。

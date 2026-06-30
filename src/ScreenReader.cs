@@ -89,8 +89,8 @@ namespace HuXiangLianPian.Accessibility
         /// When Main.DebugMode is true, also logs all announcements via DebugLogger.
         /// </summary>
         /// <param name="text">Text to speak</param>
-        /// <param name="interrupt">If true, stops current speech before speaking</param>
-        public static void Say(string text, bool interrupt = true)
+        /// <param name="interrupt">If true, stops current speech before speaking. Defaults to false to avoid cutting off speech.</param>
+        public static void Say(string text, bool interrupt = false)
         {
             if (string.IsNullOrEmpty(text)) return;
 
