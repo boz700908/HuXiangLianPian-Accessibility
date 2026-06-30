@@ -277,3 +277,15 @@ https://github.com/boz700908/HuXiangLianPian-Accessibility
 - 修复：调整菜单检测优先级，先记录 Title，再让 Settings/SaveLoad/Backlog/Confirmation 覆盖；标题界面进入的存读档菜单现在也使用同一套线性导航、面板切换刷新和删除按钮顺序。
 - 根因：删除存档确认内容通过 `ConfirmationPanel.Confirm(string message)` 入参传入，`ConfirmationPanel` 不公开保存消息；仅扫描 UI 子文本不可靠。
 - 修复：新增运行时 Harmony 补丁捕获 `Confirm(string message)` 入参，确认框出现时由 `MenuHandler` 优先朗读捕获到的原始消息。
+
+# 2026-06-30: 防止游戏未加载完成时快速存读档损坏
+- 现象：用户在游戏还没加载完成时触发快速存档，随后快速读档后没有可朗读对话。
+- 根因：`Main.QuickSave()` 直接调用 Naninovel `IStateManager.QuickSave()`，引擎允许保存当前 `PlaybackSpot`；早期状态下生成的快速存档包含空 `scriptPath`，例如 `{"scriptPath":"","lineIndex":0,"inlineIndex":0}`。
+- 本地处理：已将坏档 `GameQuickSave001.nson` 备份为 `GameQuickSave001.invalid-20260630.nson`，并把前一个有效快速存档提升为新的 `GameQuickSave001.nson`。
+- 修复：快速存档现在要求引擎已初始化、剧情已开始、播放位置包含有效脚本路径，并阻止在标题、设置、存读档、历史、确认框界面中快速存档；快速读档会先验证目标快速存档的播放位置，坏档不再读取。
+
+# 2026-06-30: 手动存读档同样防止无效剧情位置
+- 现象：存读档菜单中的手动槽位仍可在剧情未就绪时保存，或读取 `PlaybackSpot` 无效的坏档。
+- 根因：游戏自定义 `NananaGames.UI.SaveLoadMenu` 的槽位点击直接调用 `stateManager.SaveGame(slotId)` / `stateManager.LoadGame(slotId)`，不经过 `Main.QuickSave()` / `Main.QuickLoad()`。
+- 修复：新增 `SaveLoadMenuPatcher` 和共享 `SaveLoadGuard`；手动存档在引擎未就绪、剧情未开始、播放位置无效或其它存读档正在进行时会被阻止；手动读档会在菜单隐藏和游戏重置前预读并验证目标存档的播放位置，坏档会朗读“这个存档无效，无法读取”并留在菜单中。
+- 同步调整：启动提示 `mod_loaded` 去掉“按F1查看帮助”。

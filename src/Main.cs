@@ -63,11 +63,14 @@ namespace HuXiangLianPian.Accessibility
         private MenuHandler _menuHandler;
         private DialogueHandler _dialogueHandler;
         private ConfirmationPanelPatcher _confirmationPanelPatcher;
+        private SaveLoadMenuPatcher _saveLoadMenuPatcher;
         // private DialogHandler _dialogHandler;
         // private SettingsHandler _settingsHandler;
 
         private bool _menuHandlerErrorLogged = false;
         private bool _dialogueHandlerInitialized = false;
+        private bool _quickSaveInProgress = false;
+        private bool _quickLoadInProgress = false;
         #endregion
 
         #region Lifecycle
@@ -114,6 +117,9 @@ namespace HuXiangLianPian.Accessibility
         {
             _confirmationPanelPatcher = new ConfirmationPanelPatcher();
             _confirmationPanelPatcher.Apply();
+
+            _saveLoadMenuPatcher = new SaveLoadMenuPatcher();
+            _saveLoadMenuPatcher.Apply();
         }
 
         private IEnumerator AnnounceStartupDelayed()
@@ -223,6 +229,8 @@ namespace HuXiangLianPian.Accessibility
             }
             _confirmationPanelPatcher?.Dispose();
             _confirmationPanelPatcher = null;
+            _saveLoadMenuPatcher?.Dispose();
+            _saveLoadMenuPatcher = null;
             ScreenReader.Shutdown();
         }
 
@@ -331,64 +339,98 @@ namespace HuXiangLianPian.Accessibility
         /// <summary>
         /// 快速存档。
         /// </summary>
-        private void QuickSave()
+        private async void QuickSave()
         {
             try
             {
-                var stateManager = Engine.GetService<IStateManager>();
-                if (stateManager != null)
+                if (!SaveLoadGuard.TryGetStateManager(out var stateManager, out var unavailableReason))
                 {
-                    // 快速存档是异步方法，这里直接调用，不等待结果
-                    var task = stateManager.QuickSave();
-                    ScreenReader.Say("正在快速存档");
-                    Log.LogInfo("快速存档已触发");
+                    ScreenReader.Say(unavailableReason);
+                    Log.LogWarning($"快速存档被阻止: {unavailableReason}");
+                    return;
                 }
-                else
+
+                if (_quickSaveInProgress || _quickLoadInProgress || stateManager.GameSlotManager.Saving || stateManager.GameSlotManager.Loading)
                 {
-                    ScreenReader.Say("存档功能不可用");
-                    Log.LogWarning("无法获取IStateManager服务");
+                    ScreenReader.Say("存档读档正在进行，请稍候");
+                    Log.LogInfo("快速存档被阻止: 存档读档正在进行");
+                    return;
                 }
+
+                if (!SaveLoadGuard.CanQuickSaveNow(out var blockedReason))
+                {
+                    ScreenReader.Say(blockedReason);
+                    Log.LogWarning($"快速存档被阻止: {blockedReason}");
+                    return;
+                }
+
+                _quickSaveInProgress = true;
+                ScreenReader.Say("正在快速存档");
+                var savedState = await stateManager.QuickSave();
+                Log.LogInfo($"快速存档完成: 播放位置={SaveLoadGuard.FormatPlaybackSpot(savedState.PlaybackSpot)}");
             }
             catch (System.Exception e)
             {
                 ScreenReader.Say("快速存档失败");
                 Log.LogWarning($"快速存档时出错: {e.Message}");
             }
+            finally
+            {
+                _quickSaveInProgress = false;
+            }
         }
 
         /// <summary>
         /// 快速读档。
         /// </summary>
-        private void QuickLoad()
+        private async void QuickLoad()
         {
             try
             {
-                var stateManager = Engine.GetService<IStateManager>();
-                if (stateManager != null)
+                if (!SaveLoadGuard.TryGetStateManager(out var stateManager, out var unavailableReason))
                 {
-                    if (stateManager.QuickLoadAvailable)
-                    {
-                        // 快速读档是异步方法，这里直接调用，不等待结果
-                        var task = stateManager.QuickLoad();
-                        ScreenReader.Say("正在快速读档");
-                        Log.LogInfo("快速读档已触发");
-                    }
-                    else
-                    {
-                        ScreenReader.Say("没有可用的快速存档");
-                        Log.LogInfo("快速读档不可用，没有存档");
-                    }
+                    ScreenReader.Say(unavailableReason);
+                    Log.LogWarning($"快速读档被阻止: {unavailableReason}");
+                    return;
                 }
-                else
+
+                if (_quickLoadInProgress || _quickSaveInProgress || stateManager.GameSlotManager.Saving || stateManager.GameSlotManager.Loading)
                 {
-                    ScreenReader.Say("读档功能不可用");
-                    Log.LogWarning("无法获取IStateManager服务");
+                    ScreenReader.Say("存档读档正在进行，请稍候");
+                    Log.LogInfo("快速读档被阻止: 存档读档正在进行");
+                    return;
                 }
+
+                if (!stateManager.QuickLoadAvailable)
+                {
+                    ScreenReader.Say("没有可用的快速存档");
+                    Log.LogInfo("快速读档不可用，没有存档");
+                    return;
+                }
+
+                _quickLoadInProgress = true;
+
+                var quickSlotId = stateManager.Configuration.IndexToQuickSaveSlotId(1);
+                var quickState = await stateManager.GameSlotManager.Load(quickSlotId);
+                if (!SaveLoadGuard.IsGameStateLoadable(quickState))
+                {
+                    ScreenReader.Say("快速存档无效，无法读取");
+                    Log.LogWarning($"快速读档被阻止: {quickSlotId} 播放位置无效 {SaveLoadGuard.FormatPlaybackSpot(quickState?.PlaybackSpot)}");
+                    return;
+                }
+
+                ScreenReader.Say("正在快速读档");
+                var loadedState = await stateManager.QuickLoad();
+                Log.LogInfo($"快速读档完成: 播放位置={SaveLoadGuard.FormatPlaybackSpot(loadedState.PlaybackSpot)}");
             }
             catch (System.Exception e)
             {
                 ScreenReader.Say("快速读档失败");
                 Log.LogWarning($"快速读档时出错: {e.Message}");
+            }
+            finally
+            {
+                _quickLoadInProgress = false;
             }
         }
 

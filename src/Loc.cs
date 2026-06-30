@@ -133,7 +133,7 @@ namespace HuXiangLianPian.Accessibility
         {
             // ===== 通用 =====
             Add("mod_loaded",
-                "痴情妹妹纱雪无障碍Mod已加载。按F1查看帮助。");
+                "痴情妹妹纱雪无障碍Mod已加载。");
 
             Add("help_title",
                 "快捷键说明：");
